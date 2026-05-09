@@ -12,6 +12,10 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AppButton } from '../../src/components/ui/app-button';
+import {
+  exportHistoryAsCSV,
+  exportHistoryAsPDF,
+} from '../../src/features/classification/export';
 import { ClassificationRecord } from '../../src/features/classification/types';
 import { useClassification } from '../../src/providers/classification-provider';
 import { palette } from '../../src/theme/palette';
@@ -81,6 +85,8 @@ export default function HistoryScreen() {
   const [clearError, setClearError] = useState<string | null>(null);
   const [isClearing, setIsClearing] = useState(false);
   const [isConfirmingClear, setIsConfirmingClear] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+  const [exportError, setExportError] = useState<string | null>(null);
 
   const renderItem = useCallback(
     ({ item }: { item: ClassificationRecord }) => <HistoryItem item={item} />,
@@ -112,6 +118,55 @@ export default function HistoryScreen() {
                 <Text style={styles.toolsTitle}>
                   {`${history.length} saved ${history.length === 1 ? 'record' : 'records'}`}
                 </Text>
+
+                <Text style={styles.sectionLabel}>Export</Text>
+                <View style={styles.exportRow}>
+                  <AppButton
+                    disabled={isExporting}
+                    label="CSV"
+                    onPress={async () => {
+                      setIsExporting(true);
+                      setExportError(null);
+                      try {
+                        await exportHistoryAsCSV(history);
+                      } catch (e) {
+                        setExportError(
+                          e instanceof Error ? e.message : 'Export failed.',
+                        );
+                      } finally {
+                        setIsExporting(false);
+                      }
+                    }}
+                    style={styles.exportButton}
+                    tone="surface"
+                  />
+                  <AppButton
+                    disabled={isExporting}
+                    label="PDF Report"
+                    loading={isExporting}
+                    onPress={async () => {
+                      setIsExporting(true);
+                      setExportError(null);
+                      try {
+                        await exportHistoryAsPDF(history);
+                      } catch (e) {
+                        setExportError(
+                          e instanceof Error ? e.message : 'Export failed.',
+                        );
+                      } finally {
+                        setIsExporting(false);
+                      }
+                    }}
+                    style={styles.exportButton}
+                    tone="secondary"
+                  />
+                </View>
+                {exportError ? (
+                  <Text style={styles.clearErrorText}>{exportError}</Text>
+                ) : null}
+
+                <View style={styles.divider} />
+
                 {clearError ? (
                   <Text style={styles.clearErrorText}>{clearError}</Text>
                 ) : null}
@@ -214,26 +269,6 @@ const styles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 19,
   },
-  syncCard: {
-    backgroundColor: palette.surface,
-    borderColor: palette.border,
-    borderCurve: 'continuous',
-    borderRadius: 24,
-    borderWidth: 1,
-    gap: 4,
-    padding: 16,
-  },
-  syncTitle: {
-    color: palette.textMuted,
-    fontSize: 12,
-    fontWeight: '700',
-    textTransform: 'uppercase',
-  },
-  syncBody: {
-    color: palette.text,
-    fontSize: 14,
-    fontWeight: '600',
-  },
   toolsCard: {
     backgroundColor: palette.surface,
     borderColor: palette.border,
@@ -247,6 +282,26 @@ const styles = StyleSheet.create({
     color: palette.text,
     fontSize: 15,
     fontWeight: '700',
+  },
+  sectionLabel: {
+    color: palette.textMuted,
+    fontSize: 11,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    marginTop: 4,
+  },
+  exportRow: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  exportButton: {
+    flex: 1,
+    minHeight: 46,
+  },
+  divider: {
+    height: 1,
+    backgroundColor: palette.border,
+    marginVertical: 4,
   },
   confirmActions: {
     gap: 8,
