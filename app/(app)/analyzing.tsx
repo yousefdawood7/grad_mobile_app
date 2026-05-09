@@ -8,14 +8,12 @@ import { useClassification } from '../../src/providers/classification-provider';
 import { palette } from '../../src/theme/palette';
 
 export default function AnalyzingScreen() {
-  const { analyzePendingAsset, backendMode, pendingAsset } = useClassification();
+  const { analyzePendingAsset, pendingAsset } = useClassification();
   const [error, setError] = useState<string | null>(null);
   const hasStarted = useRef(false);
   const steps = [
     'Preparing image',
-    backendMode === 'remote'
-      ? 'Sending image to the analysis service'
-      : 'Running local analysis flow',
+    'Sending image to the analysis service',
     'Building result summary',
   ];
 
@@ -60,11 +58,7 @@ export default function AnalyzingScreen() {
   return (
     <FullScreenLoader
       label="Analyzing image..."
-      secondaryLabel={
-        backendMode === 'remote'
-          ? 'Please wait while we process the image and generate a result.'
-          : 'Please wait while we process the image locally.'
-      }
+      secondaryLabel="Please wait while we process the image and generate a result."
     >
       <View style={styles.steps}>
         {steps.map((step) => (

@@ -7,7 +7,6 @@ import {
   useState,
 } from 'react';
 
-import { isModelApiConfigured } from '../config/env';
 import {
   clearRemoteClassificationHistory,
   createRemoteClassificationRun,
@@ -37,7 +36,6 @@ type HistoryActionResult = { ok: true } | { message: string; ok: false };
 
 type ClassificationContextValue = {
   analyzePendingAsset: () => Promise<AnalyzeResult>;
-  backendMode: 'mock' | 'remote';
   clearHistory: () => Promise<HistoryActionResult>;
   getRecordById: (id?: string) => ClassificationRecord | undefined;
   history: ClassificationRecord[];
@@ -180,7 +178,7 @@ export function ClassificationProvider({ children }: PropsWithChildren) {
           record,
         };
       },
-      backendMode: isModelApiConfigured ? 'remote' : 'mock',
+
       clearHistory: async () => {
         try {
           if (authState === 'authenticated' && user.id) {

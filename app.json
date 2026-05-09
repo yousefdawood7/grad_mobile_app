@@ -37,7 +37,7 @@
     },
     "extra": {
       "modelApiTimeoutMs": 15000,
-      "modelApiUrl": "",
+      "modelApiUrl": "http://13.60.65.62:3000/predict",
       "supabaseUrl": "https://vejazwelilonndcsreop.supabase.co",
       "supabasePublishableKey": "sb_publishable_3PFTCbS3RCEpY12K35VB5A_4jhn0nAE"
     },
