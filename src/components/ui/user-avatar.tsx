@@ -1,4 +1,5 @@
-import { Image } from 'expo-image';
+import { Image, ImageErrorEventData } from 'expo-image';
+import { useCallback, useState } from 'react';
 import { StyleSheet, Text, View, ViewStyle } from 'react-native';
 
 import { palette } from '../../theme/palette';
@@ -56,14 +57,23 @@ export function UserAvatar({
   style,
 }: UserAvatarProps) {
   const borderRadius = size * 0.36;
+  const [imgError, setImgError] = useState(false);
 
-  if (avatarUrl) {
+  const onError = useCallback((_e: ImageErrorEventData) => {
+    setImgError(true);
+  }, []);
+
+  const hasValidImage = !!avatarUrl && !imgError;
+
+  if (hasValidImage) {
     return (
       <View
         style={[
           {
+            borderColor: 'rgba(255,255,255,0.5)',
             borderCurve: 'continuous',
             borderRadius,
+            borderWidth: 2,
             height: size,
             overflow: 'hidden',
             width: size,
@@ -73,14 +83,16 @@ export function UserAvatar({
       >
         <Image
           contentFit="cover"
+          onError={onError}
           source={{ uri: avatarUrl }}
-          style={{ height: size, width: size }}
+          style={{ height: '100%', width: '100%' }}
           transition={200}
         />
       </View>
     );
   }
 
+  // Fallback: initials circle
   const initials = getInitials(fullName);
   const backgroundColor = getColorFromName(fullName);
 
@@ -90,7 +102,9 @@ export function UserAvatar({
         styles.initialsContainer,
         {
           backgroundColor,
+          borderColor: 'rgba(255,255,255,0.5)',
           borderRadius,
+          borderWidth: 2,
           height: size,
           width: size,
         },

@@ -56,6 +56,44 @@ export default function ProfileScreen() {
     };
   }, [authState, user.avatarUrl, user.fullName, user.id]);
 
+  const pickPhoto = async () => {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      allowsEditing: true,
+      aspect: [1, 1],
+      mediaTypes: ['images'],
+      quality: 0.85,
+    });
+
+    if (!result.canceled && result.assets[0]) {
+      setAvatarUri(result.assets[0].uri);
+    }
+  };
+
+  const saveProfile = async () => {
+    setIsSaving(true);
+    setProfileError(null);
+    setProfileMessage(null);
+
+    const result = await updateProfile({
+      avatarUrl: avatarUri ?? null,
+      fullName: fullName.trim() || null,
+    });
+
+    setIsSaving(false);
+
+    if (!result.ok) {
+      setProfileError(result.message);
+      return;
+    }
+
+    setProfileMessage('Profile updated successfully.');
+
+    // Sync local state with the permanent URL from the server
+    if (user.avatarUrl) {
+      setAvatarUri(user.avatarUrl);
+    }
+  };
+
   return (
     <Screen contentContainerStyle={styles.container}>
       <View style={styles.card}>
@@ -83,61 +121,40 @@ export default function ProfileScreen() {
               value={fullName}
             />
 
-            <Text style={styles.itemTitle}>Profile photo</Text>
-            {avatarUri ? (
-              <Image
-                contentFit="cover"
-                source={{ uri: avatarUri }}
-                style={styles.avatarImage}
-                transition={200}
+            {/* Avatar row — photo + pick button side by side */}
+            <View style={styles.avatarRow}>
+              {avatarUri ? (
+                <View style={styles.avatarWrap}>
+                  <Image
+                    contentFit="cover"
+                    source={{ uri: avatarUri }}
+                    style={styles.avatarImage}
+                    transition={200}
+                  />
+                </View>
+              ) : (
+                <View style={styles.avatarPlaceholder}>
+                  <Text style={styles.avatarPlaceholderText}>No photo</Text>
+                </View>
+              )}
+              <AppButton
+                label={avatarUri ? 'Change photo' : 'Choose photo'}
+                onPress={pickPhoto}
+                tone="surface"
               />
-            ) : null}
+            </View>
+
             <AppButton
-              label={avatarUri ? 'Change photo' : 'Choose a photo'}
-              onPress={async () => {
-                const result = await ImagePicker.launchImageLibraryAsync({
-                  allowsEditing: true,
-                  aspect: [1, 1],
-                  mediaTypes: ['images'],
-                  quality: 0.85,
-                });
-
-                if (!result.canceled && result.assets[0]) {
-                  setAvatarUri(result.assets[0].uri);
-                }
-              }}
-              tone="surface"
+              label="Save profile"
+              loading={isSaving}
+              onPress={saveProfile}
             />
-
             {profileError ? (
               <Text style={styles.errorText}>{profileError}</Text>
             ) : null}
             {profileMessage ? (
               <Text style={styles.successText}>{profileMessage}</Text>
             ) : null}
-            <AppButton
-              label="Save profile"
-              loading={isSaving}
-              onPress={async () => {
-                setIsSaving(true);
-                setProfileError(null);
-                setProfileMessage(null);
-
-                const result = await updateProfile({
-                  avatarUrl: avatarUri ?? null,
-                  fullName: fullName.trim() || null,
-                });
-
-                setIsSaving(false);
-
-                if (!result.ok) {
-                  setProfileError(result.message);
-                  return;
-                }
-
-                setProfileMessage('Profile updated successfully.');
-              }}
-            />
           </>
         ) : (
           <Text style={styles.itemBody}>
@@ -145,7 +162,6 @@ export default function ProfileScreen() {
           </Text>
         )}
       </View>
-
 
       <AppButton label="Log out" onPress={signOut} tone="danger" />
     </Screen>
@@ -163,14 +179,14 @@ const styles = StyleSheet.create({
     borderCurve: 'continuous',
     borderRadius: 28,
     borderWidth: 1,
-    gap: 8,
+    gap: 10,
     padding: 20,
   },
   title: {
     color: palette.text,
     fontSize: 20,
     fontWeight: '800',
-    marginBottom: 6,
+    marginBottom: 2,
   },
   itemTitle: {
     color: palette.textMuted,
@@ -193,11 +209,39 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '600',
   },
-  avatarImage: {
-    alignSelf: 'flex-start',
-    height: 90,
-    width: 90,
+  avatarRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 14,
+  },
+  avatarWrap: {
+    borderColor: palette.border,
     borderCurve: 'continuous',
-    borderRadius: 20,
+    borderRadius: 40,
+    borderWidth: 2,
+    height: 80,
+    overflow: 'hidden',
+    width: 80,
+  },
+  avatarImage: {
+    height: '100%',
+    width: '100%',
+  },
+  avatarPlaceholder: {
+    alignItems: 'center',
+    backgroundColor: palette.background,
+    borderColor: palette.border,
+    borderCurve: 'continuous',
+    borderRadius: 40,
+    borderStyle: 'dashed',
+    borderWidth: 2,
+    height: 80,
+    justifyContent: 'center',
+    width: 80,
+  },
+  avatarPlaceholderText: {
+    color: palette.textSoft,
+    fontSize: 11,
+    fontWeight: '600',
   },
 });

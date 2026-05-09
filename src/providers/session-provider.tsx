@@ -16,7 +16,7 @@ import {
 
 import { isSupabaseConfigured } from '../config/env';
 import { SignInInput, SignUpInput } from '../features/auth/validation';
-import { upsertProfile } from '../features/profile/repository';
+import { uploadAvatar, upsertProfile } from '../features/profile/repository';
 import { STORAGE_KEYS } from '../lib/storage-keys';
 import { supabase } from '../lib/supabase';
 
@@ -59,6 +59,23 @@ export function SessionProvider({ children }: PropsWithChildren) {
   const [hasSeenOnboarding, setHasSeenOnboarding] = useState(false);
   const [session, setSession] = useState<Session | null>(null);
   const [authState, setAuthState] = useState<AuthState>('anonymous');
+  const [profile, setProfile] = useState<{
+    avatarUrl: string | null;
+    fullName: string | null;
+  } | null>(null);
+
+  /** Load the user's profile from the profiles table. */
+  const loadProfile = async (userId: string) => {
+    try {
+      const { getProfile } = await import('../features/profile/repository');
+      const data = await getProfile(userId);
+      if (data) {
+        setProfile({ avatarUrl: data.avatarUrl, fullName: data.fullName });
+      }
+    } catch {
+      // Profile load failed — non-critical, we fall back to user_metadata
+    }
+  };
 
   const syncSession = async () => {
     if (!supabase) {
@@ -68,6 +85,10 @@ export function SessionProvider({ children }: PropsWithChildren) {
     const { data } = await supabase.auth.getSession();
     setSession(data.session);
     setAuthState(data.session ? 'authenticated' : 'anonymous');
+
+    if (data.session?.user.id) {
+      await loadProfile(data.session.user.id);
+    }
   };
 
   useEffect(() => {
@@ -94,6 +115,10 @@ export function SessionProvider({ children }: PropsWithChildren) {
         setSession(data.session);
         setAuthState(data.session ? 'authenticated' : 'anonymous');
         setIsReady(true);
+
+        if (data.session?.user.id) {
+          loadProfile(data.session.user.id);
+        }
       }
     };
 
@@ -103,6 +128,12 @@ export function SessionProvider({ children }: PropsWithChildren) {
       (_event, nextSession) => {
         setSession(nextSession);
         setAuthState(nextSession ? 'authenticated' : 'anonymous');
+
+        if (nextSession?.user.id) {
+          loadProfile(nextSession.user.id);
+        } else {
+          setProfile(null);
+        }
       },
     );
 
@@ -316,14 +347,24 @@ export function SessionProvider({ children }: PropsWithChildren) {
         }
 
         try {
+          // Upload avatar to Supabase Storage if it's a local file
+          let permanentAvatarUrl = avatarUrl;
+
+          if (avatarUrl) {
+            permanentAvatarUrl = await uploadAvatar(
+              session.user.id,
+              avatarUrl,
+            );
+          }
+
           await upsertProfile(session.user.id, {
-            avatarUrl,
+            avatarUrl: permanentAvatarUrl,
             fullName,
           });
 
           const { error } = await supabase.auth.updateUser({
             data: {
-              avatar_url: avatarUrl,
+              avatar_url: permanentAvatarUrl,
               full_name: fullName,
             },
           });
@@ -373,21 +414,26 @@ export function SessionProvider({ children }: PropsWithChildren) {
       },
       user: {
         avatarUrl:
-          typeof session?.user.user_metadata?.avatar_url === 'string'
+          profile?.avatarUrl ??
+          (typeof session?.user.user_metadata?.avatar_url === 'string'
             ? session.user.user_metadata.avatar_url
-            : null,
+            : typeof session?.user.user_metadata?.picture === 'string'
+              ? session.user.user_metadata.picture
+              : null),
         email: session?.user.email ?? null,
         fullName:
-          typeof session?.user.user_metadata?.full_name === 'string'
+          profile?.fullName ??
+          (typeof session?.user.user_metadata?.full_name === 'string'
             ? session.user.user_metadata.full_name
             : typeof session?.user.user_metadata?.name === 'string'
               ? session.user.user_metadata.name
-              : null,
+              : null),
         id: session?.user.id ?? null,
       },
       userLabel:
         authState === 'authenticated'
-          ? session?.user.user_metadata?.full_name ??
+          ? profile?.fullName ??
+            session?.user.user_metadata?.full_name ??
             session?.user.user_metadata?.name ??
             session?.user.email ??
             'Signed-in user'
@@ -395,7 +441,7 @@ export function SessionProvider({ children }: PropsWithChildren) {
             ? 'Guest session'
             : 'No active session',
     }),
-    [authState, hasSeenOnboarding, isReady, session],
+    [authState, hasSeenOnboarding, isReady, profile, session],
   );
 
   return (
