@@ -48,7 +48,7 @@ export default function AuthCallbackScreen() {
     const completeAuth = async () => {
       if (!supabase) {
         if (mounted) {
-          setErrorMessage('Supabase is not configured.');
+          setErrorMessage('Authentication service is not available.');
         }
         return;
       }

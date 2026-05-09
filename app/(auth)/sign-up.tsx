@@ -112,7 +112,7 @@ export default function SignUpScreen() {
 
         <AppButton
           disabled={!isSupabaseConfigured}
-          label={isSupabaseConfigured ? 'Create account' : 'Configure Supabase first'}
+          label={isSupabaseConfigured ? 'Create account' : 'Sign-in unavailable'}
           loading={isSubmitting}
           onPress={onSubmit}
         />

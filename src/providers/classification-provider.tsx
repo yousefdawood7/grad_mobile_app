@@ -162,7 +162,7 @@ export function ClassificationProvider({ children }: PropsWithChildren) {
             setHistoryError(
               error instanceof Error
                 ? `${error.message} Saved on this device and will retry sync later.`
-                : 'Supabase sync failed. Saved on this device and will retry later.',
+                : 'Cloud sync failed. Saved on this device and will retry later.',
             );
             setHistoryStorageMode('device');
           }

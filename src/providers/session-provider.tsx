@@ -129,7 +129,7 @@ export function SessionProvider({ children }: PropsWithChildren) {
       sendOtp: async (email: string) => {
         if (!supabase) {
           return {
-            message: 'Supabase is not configured yet.',
+            message: 'Authentication service is not available.',
             ok: false,
           };
         }
@@ -148,8 +148,7 @@ export function SessionProvider({ children }: PropsWithChildren) {
       signIn: async ({ email, password }) => {
         if (!supabase) {
           return {
-            message:
-              'Supabase is not configured yet. Add the project URL and publishable key first.',
+            message: 'Authentication service is not available.',
             ok: false,
           };
         }
@@ -171,8 +170,7 @@ export function SessionProvider({ children }: PropsWithChildren) {
       signInWithGoogle: async () => {
         if (!supabase) {
           return {
-            message:
-              'Supabase is not configured yet. Add the project URL and publishable key first.',
+            message: 'Authentication service is not available.',
             ok: false,
           };
         }
@@ -285,8 +283,7 @@ export function SessionProvider({ children }: PropsWithChildren) {
       signUp: async ({ email, fullName, password }) => {
         if (!supabase) {
           return {
-            message:
-              'Supabase is not configured yet. Add the project URL and publishable key first.',
+            message: 'Authentication service is not available.',
             ok: false,
           };
         }
@@ -354,7 +351,7 @@ export function SessionProvider({ children }: PropsWithChildren) {
       verifyOtp: async (email: string, token: string) => {
         if (!supabase) {
           return {
-            message: 'Supabase is not configured yet.',
+            message: 'Authentication service is not available.',
             ok: false,
           };
         }

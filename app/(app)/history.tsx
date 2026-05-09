@@ -75,7 +75,6 @@ export default function HistoryScreen() {
     clearHistory,
     history,
     historyError,
-    historyStorageMode,
     isSyncingHistory,
     refreshHistory,
   } = useClassification();
@@ -104,19 +103,10 @@ export default function HistoryScreen() {
           <View style={styles.headerStack}>
             {historyError ? (
               <View style={styles.noticeCard}>
-                <Text style={styles.noticeTitle}>History sync issue</Text>
+                <Text style={styles.noticeTitle}>Sync issue</Text>
                 <Text style={styles.noticeBody}>{historyError}</Text>
               </View>
-            ) : (
-              <View style={styles.syncCard}>
-                <Text style={styles.syncTitle}>History source</Text>
-                <Text style={styles.syncBody}>
-                  {historyStorageMode === 'supabase'
-                    ? 'Synced with Supabase.'
-                    : 'Using on-device history.'}
-                </Text>
-              </View>
-            )}
+            ) : null}
             {history.length > 0 ? (
               <View style={styles.toolsCard}>
                 <Text style={styles.toolsTitle}>

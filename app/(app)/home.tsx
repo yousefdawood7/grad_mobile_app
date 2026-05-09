@@ -9,7 +9,7 @@ import { palette } from '../../src/theme/palette';
 
 export default function HomeScreen() {
   const { authState, signOut, userLabel } = useSession();
-  const { history, historyStorageMode } = useClassification();
+  const { history } = useClassification();
 
   const positiveCount = history.filter((item) => item.isPositive).length;
   const averageConfidence =
@@ -34,11 +34,6 @@ export default function HomeScreen() {
         <Text style={styles.heroBody}>
           Capture new observations, review previous scans, and keep your water
           hyacinth records organized in one place.
-        </Text>
-        <Text style={styles.heroMeta}>
-          {authState === 'authenticated'
-            ? `History sync: ${historyStorageMode === 'supabase' ? 'Supabase connected' : 'Using device backup'}`
-            : 'Guest mode: history is stored on this device'}
         </Text>
       </View>
 

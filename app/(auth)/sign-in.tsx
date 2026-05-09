@@ -118,7 +118,7 @@ export default function SignInScreen() {
         <View style={styles.actionGroup}>
           <AppButton
             disabled={!isSupabaseConfigured || isGoogleLoading}
-            label={isSupabaseConfigured ? 'Sign in' : 'Configure Supabase first'}
+            label={isSupabaseConfigured ? 'Sign in' : 'Sign-in unavailable'}
             loading={isSubmitting}
             onPress={onSubmit}
           />

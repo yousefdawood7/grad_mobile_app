@@ -9,12 +9,12 @@ export function AuthNotice() {
   return (
     <View style={[styles.container, isSupabaseConfigured ? styles.ready : styles.pending]}>
       <Text style={[styles.title, isSupabaseConfigured ? styles.readyText : styles.pendingText]}>
-        {isSupabaseConfigured ? 'Secure sync is available' : 'Configuration required'}
+        {isSupabaseConfigured ? 'Secure sync is available' : 'Sign-in unavailable'}
       </Text>
       <Text style={styles.body}>
         {isSupabaseConfigured
           ? 'Google, email, and saved history are ready to use.'
-          : 'Add the Supabase project URL and publishable key before using sign-in.'}
+          : 'Authentication is not configured on this build. Contact your administrator.'}
       </Text>
     </View>
   );
