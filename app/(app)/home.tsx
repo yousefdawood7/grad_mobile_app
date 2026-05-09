@@ -3,12 +3,13 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import { AppButton } from '../../src/components/ui/app-button';
 import { Screen } from '../../src/components/ui/screen';
+import { UserAvatar } from '../../src/components/ui/user-avatar';
 import { useClassification } from '../../src/providers/classification-provider';
 import { useSession } from '../../src/providers/session-provider';
 import { palette } from '../../src/theme/palette';
 
 export default function HomeScreen() {
-  const { authState, signOut, userLabel } = useSession();
+  const { authState, signOut, user, userLabel } = useSession();
   const { history } = useClassification();
 
   const positiveCount = history.filter((item) => item.isPositive).length;
@@ -23,9 +24,11 @@ export default function HomeScreen() {
     <Screen contentContainerStyle={styles.container}>
       <View style={styles.hero}>
         <View style={styles.heroTop}>
-          <View style={styles.heroBadge}>
-            <Text style={styles.heroBadgeText}>WH</Text>
-          </View>
+          <UserAvatar
+            avatarUrl={user.avatarUrl}
+            fullName={user.fullName ?? userLabel}
+            size={56}
+          />
           <View style={styles.heroText}>
             <Text style={styles.heroTitle}>Field Dashboard</Text>
             <Text style={styles.heroSubtitle}>{userLabel}</Text>
@@ -96,20 +99,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 14,
   },
-  heroBadge: {
-    alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    borderCurve: 'continuous',
-    borderRadius: 20,
-    height: 56,
-    justifyContent: 'center',
-    width: 56,
-  },
-  heroBadgeText: {
-    color: palette.white,
-    fontSize: 20,
-    fontWeight: '800',
-  },
   heroText: {
     gap: 2,
   },
@@ -127,11 +116,6 @@ const styles = StyleSheet.create({
     color: palette.white,
     fontSize: 15,
     lineHeight: 22,
-  },
-  heroMeta: {
-    color: palette.whiteMuted,
-    fontSize: 13,
-    fontWeight: '600',
   },
   statsRow: {
     flexDirection: 'row',

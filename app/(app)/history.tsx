@@ -19,6 +19,7 @@ import {
 import { ClassificationRecord } from '../../src/features/classification/types';
 import { useClassification } from '../../src/providers/classification-provider';
 import { palette } from '../../src/theme/palette';
+import { displayConfidence } from '../../src/utils/confidence';
 import { formatDateTime } from '../../src/utils/date';
 
 function HistoryItem({ item }: { item: ClassificationRecord }) {
@@ -34,7 +35,7 @@ function HistoryItem({ item }: { item: ClassificationRecord }) {
         <View style={styles.recordBody}>
           <Text style={styles.recordTitle}>{item.label}</Text>
           <Text style={styles.recordMeta}>
-            {`${item.confidence}% confidence | ${formatDateTime(item.createdAt)}`}
+            {`${displayConfidence(item.confidence)}% confidence | ${formatDateTime(item.createdAt)}`}
           </Text>
           <Text style={styles.recordText} numberOfLines={2}>
             {item.recommendation}

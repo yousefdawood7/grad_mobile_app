@@ -4,5 +4,11 @@ const dateTimeFormatter = new Intl.DateTimeFormat('en', {
 });
 
 export function formatDateTime(input: string) {
-  return dateTimeFormatter.format(new Date(input));
+  try {
+    const date = new Date(input);
+    if (isNaN(date.getTime())) return input || '—';
+    return dateTimeFormatter.format(date);
+  } catch {
+    return input || '—';
+  }
 }
