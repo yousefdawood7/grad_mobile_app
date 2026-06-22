@@ -1,4 +1,4 @@
-{
+﻿{
   "expo": {
     "name": "Water Hyacinth Classification",
     "slug": "water-hyacinth-classification",
@@ -17,7 +17,7 @@
       "bundleIdentifier": "com.gradproject.waterhyacinth",
       "supportsTablet": true,
       "infoPlist": {
-        "NSCameraUsageDescription": "Allow Water Hyacinth Classification to take photos for plant analysis.",
+        "NSCameraUsageDescription": "Allow Water Hyacinth Classification to take photos and scan live camera frames for plant analysis.",
         "NSPhotoLibraryUsageDescription": "Allow Water Hyacinth Classification to choose photos for plant analysis."
       }
     },
@@ -33,7 +33,8 @@
     },
     "extra": {
       "modelApiTimeoutMs": 15000,
-      "modelApiUrl": "http://16.171.230.132:3000/predict",
+      "modelApiUrl": "http://13.60.162.222:3000/api/v1/water-hyacinth/predict",
+      "modelApiWsUrl": "ws://13.60.162.222:3000/api/v1/water-hyacinth/ws/live-detect",
       "supabaseUrl": "https://vejazwelilonndcsreop.supabase.co",
       "supabasePublishableKey": "sb_publishable_3PFTCbS3RCEpY12K35VB5A_4jhn0nAE"
     },

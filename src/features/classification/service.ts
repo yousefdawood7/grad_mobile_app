@@ -1,21 +1,34 @@
 import { Platform } from 'react-native';
 
 import { env } from '../../config/env';
-import { ClassificationRecord, PendingAsset } from './types';
+import { BoundingBox, ClassificationRecord, PendingAsset, RiskLevel } from './types';
 
-/**
- * Response shape from the real ML model API at /predict.
- *
- * prediction: "water_hyacinth" | "not_water_hyacinth"
- * probability: raw probability score (0–1)
- * confidence:  confidence score   (0–1)
- * inference_time: seconds
- */
-type RemoteClassificationResponse = {
+type RemoteBoundingBox = {
   confidence?: number;
-  inference_time?: number;
-  prediction?: 'water_hyacinth' | 'not_water_hyacinth';
-  probability?: number;
+  height?: number;
+  width?: number;
+  x1?: number;
+  x2?: number;
+  y1?: number;
+  y2?: number;
+};
+
+type RemoteClassificationResponse = {
+  boxes?: RemoteBoundingBox[];
+  classification?: 'non_water_hyacinth' | 'water_hyacinth';
+  classification_confidence?: number;
+  coverage_percent?: number;
+  detection_confidence?: number;
+  detected_regions?: number;
+  image_height?: number;
+  image_width?: number;
+  risk_level?: RiskLevel;
+};
+
+export type LiveDetectionMessage = RemoteClassificationResponse & {
+  detail?: string;
+  frame_id?: string;
+  status_code?: number;
 };
 
 export async function analyzeAsset(
@@ -46,26 +59,45 @@ export function isUuid(value: string) {
   );
 }
 
+export function createLiveDetectionSocket() {
+  if (!env.modelApiWsUrl) {
+    throw new Error('Live detection socket URL is not configured.');
+  }
+
+  return new WebSocket(env.modelApiWsUrl);
+}
+
+export function normalizeBoxes(boxes?: RemoteBoundingBox[]): BoundingBox[] {
+  if (!boxes?.length) {
+    return [];
+  }
+
+  return boxes.map((box) => ({
+    confidence: box.confidence ?? 0,
+    height: box.height ?? Math.max(0, (box.y2 ?? 0) - (box.y1 ?? 0)),
+    width: box.width ?? Math.max(0, (box.x2 ?? 0) - (box.x1 ?? 0)),
+    x1: box.x1 ?? 0,
+    x2: box.x2 ?? 0,
+    y1: box.y1 ?? 0,
+    y2: box.y2 ?? 0,
+  }));
+}
+
 async function runRemoteClassification(
   asset: PendingAsset,
 ): Promise<ClassificationRecord> {
   const controller = new AbortController();
-  const timeout = setTimeout(
-    () => controller.abort(),
-    env.modelApiTimeoutMs,
-  );
+  const timeout = setTimeout(() => controller.abort(), env.modelApiTimeoutMs);
 
   try {
     const formData = new FormData();
     const fileUri = asset.uploadUri ?? asset.uri;
 
     if (Platform.OS === 'web') {
-      // On web, convert the URI (blob: or data:) to a real File object
       const blob = await fetch(fileUri).then((r) => r.blob());
       const file = new File([blob], asset.name, { type: asset.mimeType });
       formData.append('file', file);
     } else {
-      // React Native runtime handles { uri, name, type } objects natively
       formData.append('file', {
         name: asset.name,
         type: asset.mimeType,
@@ -81,10 +113,9 @@ async function runRemoteClassification(
         method: 'POST',
         signal: controller.signal,
       });
-    } catch (networkError) {
-      // CORS or network failure — fetch itself throws
+    } catch {
       throw new Error(
-        'Unable to reach the analysis service. This may be a network or CORS issue. Please try again from the mobile app.',
+        'Unable to reach the analysis service. Check that the EC2 backend is reachable from this device.',
       );
     }
 
@@ -95,7 +126,6 @@ async function runRemoteClassification(
       );
     }
 
-    // Safely parse JSON — guard against non-JSON responses
     const responseText = await response.text();
     let payload: RemoteClassificationResponse | null = null;
 
@@ -107,22 +137,33 @@ async function runRemoteClassification(
       );
     }
 
-    const prediction = payload?.prediction ?? 'not_water_hyacinth';
-    const isPositive = prediction === 'water_hyacinth';
-    const label = mapPredictionToLabel(prediction);
-    const confidence = normalizeConfidence(
-      payload?.confidence ?? payload?.probability,
-    );
+    const classification = payload?.classification ?? 'non_water_hyacinth';
+    const isPositive = classification === 'water_hyacinth';
+    const label = mapClassificationToLabel(classification);
+    const confidence = normalizeConfidence(payload?.classification_confidence);
+    const boxes = normalizeBoxes(payload?.boxes);
+    const coveragePercent = normalizeOptionalNumber(payload?.coverage_percent);
+    const riskLevel = payload?.risk_level ?? 'NONE';
 
     return {
+      boxes,
+      classificationConfidence: normalizeOptionalNumber(
+        payload?.classification_confidence,
+      ),
       confidence,
+      coveragePercent,
       createdAt: new Date().toISOString(),
+      detectionConfidence: normalizeOptionalNumber(payload?.detection_confidence),
+      detectedRegions: payload?.detected_regions ?? boxes.length,
       id: createId(),
+      imageHeight: payload?.image_height,
       imageUri: asset.uri,
+      imageWidth: payload?.image_width,
       isPositive,
       label,
-      modelVersion: 'EfficientNetV2',
-      recommendation: buildRecommendation(label, confidence),
+      modelVersion: 'EfficientNetV2 + YOLO',
+      recommendation: buildRecommendation(label, confidence, riskLevel),
+      riskLevel,
       source: asset.source,
     };
   } finally {
@@ -130,53 +171,54 @@ async function runRemoteClassification(
   }
 }
 
-// ──────────────────────────────────────────────
-// Helpers
-// ──────────────────────────────────────────────
-
-/**
- * The API returns confidence as a 0–1 decimal. Convert to 0–100 percentage.
- */
 function normalizeConfidence(value?: number) {
   if (typeof value !== 'number' || Number.isNaN(value)) {
     return 0;
   }
 
-  // Values in 0–1 range → multiply to percentage
   const pct = value > 0 && value <= 1 ? value * 100 : value;
   return Math.max(0, Math.min(100, Math.round(pct)));
 }
 
-/**
- * Map the API's prediction string to the app's label system.
- */
-function mapPredictionToLabel(
-  prediction: string,
+function normalizeOptionalNumber(value?: number) {
+  if (typeof value !== 'number' || Number.isNaN(value)) {
+    return undefined;
+  }
+
+  return value;
+}
+
+function mapClassificationToLabel(
+  classification: string,
 ): ClassificationRecord['label'] {
-  if (prediction === 'water_hyacinth') return 'Water Hyacinth';
-  if (prediction === 'not_water_hyacinth') return 'No Water Hyacinth';
+  if (classification === 'water_hyacinth') return 'Water Hyacinth';
+  if (classification === 'non_water_hyacinth') return 'No Water Hyacinth';
   return 'Needs Review';
 }
 
-/**
- * Generate a human-readable recommendation based on the classification.
- */
 function buildRecommendation(
   label: ClassificationRecord['label'],
   confidence: number,
+  riskLevel: RiskLevel,
 ): string {
   if (label === 'Water Hyacinth') {
-    if (confidence >= 90) {
-      return 'Water hyacinth is very likely present. Report this sighting to local environmental authorities and schedule a manual field review.';
+    if (riskLevel === 'CRITICAL' || riskLevel === 'HIGH') {
+      return 'Dense water hyacinth coverage is likely present. Escalate this sighting for urgent field verification and containment planning.';
     }
-    return 'Water hyacinth appears to be present in this image. Consider reporting the sighting to local environmental authorities and scheduling a manual field review.';
+
+    if (confidence >= 90) {
+      return 'Water hyacinth is very likely present. Report this sighting and schedule a manual field review.';
+    }
+
+    return 'Water hyacinth appears to be present. Capture another angle if possible and report the sighting for review.';
   }
 
   if (label === 'No Water Hyacinth') {
     if (confidence >= 90) {
       return 'This sample does not resemble water hyacinth. Keep monitoring the area and upload more images if growth patterns change.';
     }
-    return 'This sample is unlikely to be water hyacinth, but continue monitoring. Upload additional images if conditions change.';
+
+    return 'This sample is unlikely to be water hyacinth, but continue monitoring and rescan if conditions change.';
   }
 
   return 'The analysis is uncertain. Capture another image with clearer focus and more of the plant structure visible for a more reliable result.';

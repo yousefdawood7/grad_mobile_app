@@ -1,4 +1,4 @@
-import { supabase } from '../../lib/supabase';
+﻿import { supabase } from '../../lib/supabase';
 import { ClassificationRecord } from './types';
 
 type ClassificationRunRow = {
@@ -106,6 +106,7 @@ export async function clearRemoteClassificationHistory(userId: string) {
 
 function mapClassificationRun(row: ClassificationRunRow): ClassificationRecord {
   return {
+    boxes: [],
     confidence: row.confidence,
     createdAt: row.created_at,
     id: row.id,

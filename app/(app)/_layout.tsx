@@ -1,4 +1,4 @@
-import { Link, Stack } from 'expo-router';
+﻿import { Link, Stack } from 'expo-router';
 import { Pressable, Text } from 'react-native';
 
 import { palette } from '../../src/theme/palette';
@@ -36,7 +36,11 @@ export default function AppLayout() {
       <Stack.Screen name="home" options={{ title: 'Dashboard' }} />
       <Stack.Screen
         name="capture"
-        options={{ headerRight: HeaderHomeLink, title: 'Capture image' }}
+        options={{ headerRight: HeaderHomeLink, title: 'Take photo' }}
+      />
+      <Stack.Screen
+        name="live-detect"
+        options={{ headerRight: HeaderHomeLink, title: 'Live detection' }}
       />
       <Stack.Screen
         name="upload"

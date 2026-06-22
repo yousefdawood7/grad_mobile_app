@@ -1,6 +1,6 @@
-import * as ImagePicker from 'expo-image-picker';
+﻿import * as ImagePicker from 'expo-image-picker';
 import { Image } from 'expo-image';
-import { router } from 'expo-router';
+import { Link, router } from 'expo-router';
 import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
@@ -60,17 +60,20 @@ export default function CaptureScreen() {
           />
         ) : (
           <View style={styles.emptyState}>
-            <Text style={styles.emptyTitle}>Ready to capture</Text>
+            <Text style={styles.emptyTitle}>Choose detection mode</Text>
             <Text style={styles.emptyBody}>
-              Take a clear photo of the plant, leaves, and surrounding water
-              surface for the strongest result.
+              Take a still photo for a saved result, or open live detection to
+              stream frames and see borders update in real time.
             </Text>
           </View>
         )}
       </View>
 
       <View style={styles.actionCard}>
-        <AppButton label="Open camera" onPress={handleTakePhoto} />
+        <AppButton label="Take photo" onPress={handleTakePhoto} />
+        <Link href="/(app)/live-detect" asChild>
+          <AppButton label="Open live detection" tone="secondary" />
+        </Link>
         {permissionMessage ? (
           <Text style={styles.permissionText}>{permissionMessage}</Text>
         ) : null}
