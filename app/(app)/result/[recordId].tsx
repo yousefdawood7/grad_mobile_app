@@ -1,6 +1,7 @@
 import { Image } from 'expo-image';
 import { Link, useLocalSearchParams } from 'expo-router';
-import { StyleSheet, Text, View } from 'react-native';
+import { useState } from 'react';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { AppButton } from '../../../src/components/ui/app-button';
 import { Screen } from '../../../src/components/ui/screen';
@@ -32,12 +33,13 @@ export default function ResultScreen() {
 
   const progressWidth = `${Math.round(record.confidence)}%` as const;
   const hasDimensions = Boolean(record.imageWidth && record.imageHeight);
+  const [showBorders, setShowBorders] = useState(true);
 
   return (
     <Screen contentContainerStyle={styles.container}>
       <View style={styles.card}>
         <DetectionOverlay
-          boxes={record.boxes ?? []}
+          boxes={showBorders ? (record.boxes ?? []) : []}
           imageHeight={record.imageHeight}
           imageWidth={record.imageWidth}
           style={[
@@ -73,6 +75,14 @@ export default function ResultScreen() {
         <View style={styles.progressTrack}>
           <View style={[styles.progressFill, { width: progressWidth }]} />
         </View>
+        <Pressable
+          onPress={() => setShowBorders((prev) => !prev)}
+          style={[styles.bordersToggle, showBorders && styles.bordersToggleActive]}
+        >
+          <Text style={[styles.bordersToggleText, showBorders && styles.bordersToggleTextActive]}>
+            {showBorders ? 'Hide borders' : 'Show borders'}
+          </Text>
+        </Pressable>
       </View>
 
       <View style={styles.card}>
@@ -210,5 +220,28 @@ const styles = StyleSheet.create({
   },
   actions: {
     gap: 8,
+  },
+  bordersToggle: {
+    alignItems: 'center',
+    backgroundColor: palette.background,
+    borderColor: palette.border,
+    borderCurve: 'continuous',
+    borderRadius: 14,
+    borderWidth: 1,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    marginTop: 6,
+  },
+  bordersToggleActive: {
+    backgroundColor: palette.successSoft,
+    borderColor: palette.brand,
+  },
+  bordersToggleText: {
+    color: palette.textMuted,
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  bordersToggleTextActive: {
+    color: palette.brand,
   },
 });
