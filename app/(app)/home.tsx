@@ -1,4 +1,4 @@
-import { Link } from 'expo-router';
+﻿import { Link } from 'expo-router';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { AppButton } from '../../src/components/ui/app-button';
@@ -9,7 +9,7 @@ import { useSession } from '../../src/providers/session-provider';
 import { palette } from '../../src/theme/palette';
 
 export default function HomeScreen() {
-  const { authState, signOut, user, userLabel } = useSession();
+  const { signOut, user, userLabel } = useSession();
   const { history } = useClassification();
 
   const positiveCount = history.filter((item) => item.isPositive).length;
@@ -57,14 +57,17 @@ export default function HomeScreen() {
 
       <View style={styles.actions}>
         <Text style={styles.sectionTitle}>Start a scan</Text>
+        <Link href="/(app)/live-detect" asChild>
+          <AppButton label="Live detection" />
+        </Link>
         <Link href="/(app)/capture" asChild>
-          <AppButton label="Capture image" />
+          <AppButton label="Take photo" tone="secondary" />
         </Link>
         <Link href="/(app)/upload" asChild>
-          <AppButton label="Upload image" tone="secondary" />
+          <AppButton label="Upload image" tone="surface" />
         </Link>
         <Link href="/(app)/history" asChild>
-          <AppButton label="Open history" tone="surface" />
+          <AppButton label="Open history" tone="ghost" />
         </Link>
       </View>
 

@@ -1,9 +1,10 @@
-import { Image } from 'expo-image';
+﻿import { Image } from 'expo-image';
 import { Link, useLocalSearchParams } from 'expo-router';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { AppButton } from '../../../src/components/ui/app-button';
 import { Screen } from '../../../src/components/ui/screen';
+import { DetectionOverlay } from '../../../src/features/classification/components/detection-overlay';
 import { useClassification } from '../../../src/providers/classification-provider';
 import { palette } from '../../../src/theme/palette';
 
@@ -30,16 +31,29 @@ export default function ResultScreen() {
   }
 
   const progressWidth = `${Math.round(record.confidence)}%` as const;
+  const hasDimensions = Boolean(record.imageWidth && record.imageHeight);
 
   return (
     <Screen contentContainerStyle={styles.container}>
       <View style={styles.card}>
-        <Image
-          contentFit="cover"
-          source={{ uri: record.imageUri }}
-          style={styles.image}
-          transition={200}
-        />
+        <DetectionOverlay
+          boxes={record.boxes ?? []}
+          imageHeight={record.imageHeight}
+          imageWidth={record.imageWidth}
+          style={[
+            styles.imageFrame,
+            hasDimensions && record.imageWidth && record.imageHeight
+              ? { aspectRatio: record.imageWidth / record.imageHeight }
+              : null,
+          ]}
+        >
+          <Image
+            contentFit="contain"
+            source={{ uri: record.imageUri }}
+            style={styles.image}
+            transition={200}
+          />
+        </DetectionOverlay>
         <View style={styles.resultHeader}>
           <Text
             style={[
@@ -50,6 +64,11 @@ export default function ResultScreen() {
             {record.label}
           </Text>
           <Text style={styles.confidence}>Confidence: {record.confidence}%</Text>
+        </View>
+        <View style={styles.metricRow}>
+          <MetricCard label="Coverage" value={record.coveragePercent != null ? `${record.coveragePercent}%` : '--'} />
+          <MetricCard label="Regions" value={`${record.detectedRegions ?? record.boxes?.length ?? 0}`} />
+          <MetricCard label="Risk" value={record.riskLevel ?? '--'} />
         </View>
         <View style={styles.progressTrack}>
           <View style={[styles.progressFill, { width: progressWidth }]} />
@@ -66,6 +85,9 @@ export default function ResultScreen() {
         <Link href="/(app)/capture" asChild>
           <AppButton label="Scan another image" />
         </Link>
+        <Link href="/(app)/live-detect" asChild>
+          <AppButton label="Open live detection" tone="secondary" />
+        </Link>
         <Link href="/(app)/history" asChild>
           <AppButton label="Open history" tone="surface" />
         </Link>
@@ -74,6 +96,15 @@ export default function ResultScreen() {
         </Link>
       </View>
     </Screen>
+  );
+}
+
+function MetricCard({ label, value }: { label: string; value: string }) {
+  return (
+    <View style={styles.metricCard}>
+      <Text style={styles.metricValue}>{value}</Text>
+      <Text style={styles.metricLabel}>{label}</Text>
+    </View>
   );
 }
 
@@ -91,10 +122,16 @@ const styles = StyleSheet.create({
     gap: 14,
     padding: 18,
   },
+  imageFrame: {
+    backgroundColor: '#E9F2EF',
+    borderCurve: 'continuous',
+    borderRadius: 22,
+    minHeight: 220,
+  },
   image: {
     borderCurve: 'continuous',
     borderRadius: 22,
-    height: 220,
+    height: '100%',
     width: '100%',
   },
   resultHeader: {
@@ -114,6 +151,31 @@ const styles = StyleSheet.create({
     color: palette.textMuted,
     fontSize: 14,
     fontWeight: '600',
+  },
+  metricRow: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  metricCard: {
+    backgroundColor: palette.background,
+    borderColor: palette.border,
+    borderCurve: 'continuous',
+    borderRadius: 18,
+    borderWidth: 1,
+    flex: 1,
+    gap: 4,
+    padding: 12,
+  },
+  metricValue: {
+    color: palette.text,
+    fontSize: 16,
+    fontWeight: '800',
+  },
+  metricLabel: {
+    color: palette.textMuted,
+    fontSize: 11,
+    fontWeight: '700',
+    textTransform: 'uppercase',
   },
   progressTrack: {
     backgroundColor: palette.border,
