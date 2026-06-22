@@ -1,10 +1,11 @@
-import { CameraRatio, CameraView, useCameraPermissions } from 'expo-camera';
+import { CameraRatio, CameraView, CameraType, useCameraPermissions } from 'expo-camera';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Platform,
   Pressable,
   StyleSheet,
+  Switch,
   Text,
   View,
 } from 'react-native';
@@ -58,6 +59,11 @@ export default function LiveDetectScreen() {
   const [prediction, setPrediction] = useState<LivePrediction | null>(null);
   const [lastUpdatedAt, setLastUpdatedAt] = useState<number | null>(null);
   const [quality, setQuality] = useState<QualityPreset>('balanced');
+  const [showBorders, setShowBorders] = useState(true);
+  const [cameraFacing, setCameraFacing] = useState<CameraType>('back');
+  const [torchEnabled, setTorchEnabled] = useState(false);
+  const [fps, setFps] = useState(0);
+  const frameTimestampsRef = useRef<number[]>([]);
 
   useEffect(() => {
     return () => {
@@ -233,6 +239,14 @@ export default function LiveDetectScreen() {
         });
         setLastUpdatedAt(Date.now());
 
+        // Track FPS
+        const now = Date.now();
+        frameTimestampsRef.current.push(now);
+        frameTimestampsRef.current = frameTimestampsRef.current.filter(
+          (t) => now - t < 1000,
+        );
+        setFps(frameTimestampsRef.current.length);
+
         // Response-driven: capture next frame now that we got a result
         scheduleNextCapture();
       };
@@ -264,7 +278,7 @@ export default function LiveDetectScreen() {
       <View style={styles.previewCard}>
         {permission?.granted ? (
           <DetectionOverlay
-            boxes={prediction?.boxes ?? []}
+            boxes={showBorders ? (prediction?.boxes ?? []) : []}
             imageHeight={prediction?.imageHeight}
             imageWidth={prediction?.imageWidth}
             style={styles.previewFrame}
@@ -272,7 +286,8 @@ export default function LiveDetectScreen() {
             <CameraView
               active
               animateShutter={false}
-              facing="back"
+              enableTorch={torchEnabled}
+              facing={cameraFacing}
               mode="picture"
               mirror={false}
               onCameraReady={() => setCameraReady(true)}
@@ -354,6 +369,50 @@ export default function LiveDetectScreen() {
             ))}
           </View>
         </View>
+
+        <View style={styles.optionsSection}>
+          <Text style={styles.qualityLabel}>Options</Text>
+
+          <View style={styles.optionRow}>
+            <Text style={styles.optionText}>Show borders</Text>
+            <Switch
+              value={showBorders}
+              onValueChange={setShowBorders}
+              trackColor={{ false: palette.border, true: palette.brand }}
+              thumbColor={palette.white}
+            />
+          </View>
+
+          <View style={styles.optionRow}>
+            <Text style={styles.optionText}>Flashlight</Text>
+            <Switch
+              value={torchEnabled}
+              onValueChange={setTorchEnabled}
+              trackColor={{ false: palette.border, true: palette.brand }}
+              thumbColor={palette.white}
+            />
+          </View>
+
+          <View style={styles.qualityRow}>
+            <Pressable
+              onPress={() =>
+                setCameraFacing((prev) => (prev === 'back' ? 'front' : 'back'))
+              }
+              style={styles.optionButton}
+            >
+              <Text style={styles.optionButtonText}>
+                {cameraFacing === 'back' ? '🔄 Flip to front' : '🔄 Flip to back'}
+              </Text>
+            </Pressable>
+          </View>
+        </View>
+
+        {isStreaming ? (
+          <View style={styles.fpsRow}>
+            <Text style={styles.fpsText}>{fps} FPS</Text>
+          </View>
+        ) : null}
+
         <View style={styles.actions}>
           {isStreaming || isConnecting ? (
             <AppButton
@@ -524,6 +583,50 @@ const styles = StyleSheet.create({
   },
   qualityPillTextActive: {
     color: palette.white,
+  },
+  optionsSection: {
+    gap: 10,
+  },
+  optionRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    backgroundColor: palette.background,
+    borderColor: palette.border,
+    borderCurve: 'continuous',
+    borderRadius: 14,
+    borderWidth: 1,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+  },
+  optionText: {
+    color: palette.text,
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  optionButton: {
+    backgroundColor: palette.background,
+    borderColor: palette.border,
+    borderCurve: 'continuous',
+    borderRadius: 14,
+    borderWidth: 1,
+    flex: 1,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  optionButtonText: {
+    color: palette.text,
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  fpsRow: {
+    alignItems: 'center',
+  },
+  fpsText: {
+    color: palette.brandDeep,
+    fontSize: 13,
+    fontWeight: '800',
   },
 });
 
