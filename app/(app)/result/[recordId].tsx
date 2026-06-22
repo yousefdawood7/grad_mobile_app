@@ -1,4 +1,4 @@
-﻿import { Image } from 'expo-image';
+import { Image } from 'expo-image';
 import { Link, useLocalSearchParams } from 'expo-router';
 import { StyleSheet, Text, View } from 'react-native';
 
@@ -66,7 +66,7 @@ export default function ResultScreen() {
           <Text style={styles.confidence}>Confidence: {record.confidence}%</Text>
         </View>
         <View style={styles.metricRow}>
-          <MetricCard label="Coverage" value={record.coveragePercent != null ? `${record.coveragePercent}%` : '--'} />
+          <MetricCard label="Coverage" value={record.coveragePercent != null ? `${record.coveragePercent.toFixed(1)}%` : '--'} />
           <MetricCard label="Regions" value={`${record.detectedRegions ?? record.boxes?.length ?? 0}`} />
           <MetricCard label="Risk" value={record.riskLevel ?? '--'} />
         </View>

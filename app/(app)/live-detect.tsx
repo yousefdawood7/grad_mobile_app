@@ -1,6 +1,13 @@
 import { CameraRatio, CameraView, useCameraPermissions } from 'expo-camera';
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Platform, StyleSheet, Text, View } from 'react-native';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  ActivityIndicator,
+  Platform,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 
 import { AppButton } from '../../src/components/ui/app-button';
 import { Screen } from '../../src/components/ui/screen';
@@ -13,7 +20,16 @@ import {
 import { BoundingBox, RiskLevel } from '../../src/features/classification/types';
 import { palette } from '../../src/theme/palette';
 
-const FRAME_INTERVAL_MS = 450;
+/** Small cooldown to avoid back-to-back captures on very fast connections */
+const MIN_FRAME_GAP_MS = 80;
+
+type QualityPreset = 'fast' | 'balanced' | 'best';
+
+const QUALITY_PRESETS: Record<QualityPreset, { label: string; quality: number }> = {
+  fast:     { label: 'Fast',     quality: 0.1 },
+  balanced: { label: 'Balanced', quality: 0.3 },
+  best:     { label: 'Best',     quality: 0.6 },
+};
 
 type LivePrediction = {
   boxes: BoundingBox[];
@@ -30,10 +46,9 @@ type LivePrediction = {
 export default function LiveDetectScreen() {
   const cameraRef = useRef<CameraView | null>(null);
   const socketRef = useRef<WebSocket | null>(null);
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isCapturingRef = useRef(false);
   const manuallyStoppedRef = useRef(false);
-  const lastSentFrameIdRef = useRef<string | null>(null);
+  const lastCaptureTimeRef = useRef(0);
 
   const [permission, requestPermission] = useCameraPermissions();
   const [cameraReady, setCameraReady] = useState(false);
@@ -42,6 +57,7 @@ export default function LiveDetectScreen() {
   const [isConnecting, setIsConnecting] = useState(false);
   const [prediction, setPrediction] = useState<LivePrediction | null>(null);
   const [lastUpdatedAt, setLastUpdatedAt] = useState<number | null>(null);
+  const [quality, setQuality] = useState<QualityPreset>('balanced');
 
   useEffect(() => {
     return () => {
@@ -86,25 +102,25 @@ export default function LiveDetectScreen() {
     return 'Grant camera access and the app will start live detection automatically.';
   }, [error, isConnecting, isStreaming, lastUpdatedAt, prediction?.boxes?.length]);
 
-  const clearLoop = () => {
-    if (timerRef.current) {
-      clearTimeout(timerRef.current);
-      timerRef.current = null;
-    }
-  };
+  /**
+   * Schedule the next frame capture respecting a minimum gap.
+   * Called after receiving a WS response (response-driven loop),
+   * NOT on a fixed timer — this avoids stacking stale frames.
+   */
+  const scheduleNextCapture = useCallback(() => {
+    if (manuallyStoppedRef.current || !socketRef.current) return;
 
-  const queueNextFrame = () => {
-    clearLoop();
-    timerRef.current = setTimeout(() => {
+    const elapsed = Date.now() - lastCaptureTimeRef.current;
+    const delay = Math.max(0, MIN_FRAME_GAP_MS - elapsed);
+
+    setTimeout(() => {
       void captureAndSendFrame();
-    }, FRAME_INTERVAL_MS);
-  };
+    }, delay);
+  }, []);
 
   const stopStreaming = (manual: boolean) => {
     manuallyStoppedRef.current = manual;
-    clearLoop();
     isCapturingRef.current = false;
-    lastSentFrameIdRef.current = null;
     setIsConnecting(false);
     setIsStreaming(false);
 
@@ -126,30 +142,29 @@ export default function LiveDetectScreen() {
 
   const captureAndSendFrame = async () => {
     if (!socketRef.current || socketRef.current.readyState !== WebSocket.OPEN) {
-      queueNextFrame();
       return;
     }
 
-    if (!cameraRef.current || isCapturingRef.current) {
-      queueNextFrame();
+    if (!cameraRef.current || isCapturingRef.current || manuallyStoppedRef.current) {
       return;
     }
 
     try {
       isCapturingRef.current = true;
+      lastCaptureTimeRef.current = Date.now();
+
       const photo = await cameraRef.current.takePictureAsync({
         base64: true,
         imageType: 'jpg',
-        quality: 0.4,
+        quality: QUALITY_PRESETS[quality].quality,
+        shutterSound: false,
       });
 
-      if (!photo.base64) {
-        queueNextFrame();
+      if (!photo?.base64 || !socketRef.current || manuallyStoppedRef.current) {
         return;
       }
 
       const frameId = `${Date.now()}`;
-      lastSentFrameIdRef.current = frameId;
       socketRef.current.send(
         JSON.stringify({
           frame_id: frameId,
@@ -200,7 +215,8 @@ export default function LiveDetectScreen() {
 
         if (payload.detail) {
           setError(payload.detail);
-          queueNextFrame();
+          // Still try next frame on transient errors
+          scheduleNextCapture();
           return;
         }
 
@@ -216,9 +232,9 @@ export default function LiveDetectScreen() {
           riskLevel: payload.risk_level,
         });
         setLastUpdatedAt(Date.now());
-        if (!manuallyStoppedRef.current && payload.frame_id === lastSentFrameIdRef.current) {
-          queueNextFrame();
-        }
+
+        // Response-driven: capture next frame now that we got a result
+        scheduleNextCapture();
       };
 
       socket.onerror = () => {
@@ -229,7 +245,6 @@ export default function LiveDetectScreen() {
       };
 
       socket.onclose = () => {
-        clearLoop();
         setIsConnecting(false);
         setIsStreaming(false);
         socketRef.current = null;
@@ -245,7 +260,7 @@ export default function LiveDetectScreen() {
   };
 
   return (
-    <Screen contentContainerStyle={styles.container} scrollEnabled={false}>
+    <Screen contentContainerStyle={styles.container}>
       <View style={styles.previewCard}>
         {permission?.granted ? (
           <DetectionOverlay
@@ -256,6 +271,7 @@ export default function LiveDetectScreen() {
           >
             <CameraView
               active
+              animateShutter={false}
               facing="back"
               mode="picture"
               mirror={false}
@@ -284,13 +300,16 @@ export default function LiveDetectScreen() {
         <View style={styles.metricRow}>
           <MetricCard
             label="Class"
-            value={formatClassification(prediction?.classification)}
+            value={formatClassification(
+              prediction?.classification,
+              prediction?.classificationConfidence,
+            )}
           />
           <MetricCard
             label="Coverage"
             value={
               prediction?.coveragePercent != null
-                ? `${prediction.coveragePercent}%`
+                ? `${prediction.coveragePercent.toFixed(1)}%`
                 : '--'
             }
           />
@@ -302,21 +321,38 @@ export default function LiveDetectScreen() {
             value={`${prediction?.detectedRegions ?? prediction?.boxes.length ?? 0}`}
           />
           <MetricCard
-            label="Class conf."
-            value={
-              prediction?.classificationConfidence != null
-                ? `${Math.round(prediction.classificationConfidence * 100)}%`
-                : '--'
-            }
-          />
-          <MetricCard
             label="Det. conf."
             value={
               prediction?.detectionConfidence != null
-                ? `${Math.round(prediction.detectionConfidence * 100)}%`
+                ? `${(prediction.detectionConfidence * 100).toFixed(0)}%`
                 : '--'
             }
           />
+        </View>
+
+        <View style={styles.qualitySection}>
+          <Text style={styles.qualityLabel}>Capture quality</Text>
+          <View style={styles.qualityRow}>
+            {(Object.keys(QUALITY_PRESETS) as QualityPreset[]).map((key) => (
+              <Pressable
+                key={key}
+                onPress={() => setQuality(key)}
+                style={[
+                  styles.qualityPill,
+                  quality === key && styles.qualityPillActive,
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.qualityPillText,
+                    quality === key && styles.qualityPillTextActive,
+                  ]}
+                >
+                  {QUALITY_PRESETS[key].label}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
         </View>
         <View style={styles.actions}>
           {isStreaming || isConnecting ? (
@@ -346,13 +382,16 @@ function MetricCard({ label, value }: { label: string; value: string }) {
   );
 }
 
-function formatClassification(value?: string) {
+function formatClassification(value?: string, confidence?: number) {
+  const conf =
+    confidence != null ? ` ${(confidence * 100).toFixed(0)}%` : '';
+
   if (value === 'water_hyacinth') {
-    return 'Detected';
+    return `Water Hyacinth${conf}`;
   }
 
   if (value === 'non_water_hyacinth') {
-    return 'Clear';
+    return `Non Water Hyacinth${conf}`;
   }
 
   return '--';
@@ -449,6 +488,42 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flexDirection: 'row',
     gap: 12,
+  },
+  qualitySection: {
+    gap: 8,
+  },
+  qualityLabel: {
+    color: palette.textMuted,
+    fontSize: 12,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+  },
+  qualityRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  qualityPill: {
+    backgroundColor: palette.background,
+    borderColor: palette.border,
+    borderCurve: 'continuous',
+    borderRadius: 12,
+    borderWidth: 1,
+    flex: 1,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    alignItems: 'center',
+  },
+  qualityPillActive: {
+    backgroundColor: palette.brand,
+    borderColor: palette.brand,
+  },
+  qualityPillText: {
+    color: palette.textMuted,
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  qualityPillTextActive: {
+    color: palette.white,
   },
 });
 

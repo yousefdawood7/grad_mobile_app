@@ -142,7 +142,7 @@ async function runRemoteClassification(
     const label = mapClassificationToLabel(classification);
     const confidence = normalizeConfidence(payload?.classification_confidence);
     const boxes = normalizeBoxes(payload?.boxes);
-    const coveragePercent = normalizeOptionalNumber(payload?.coverage_percent);
+    const coveragePercent = normalizePercentage(payload?.coverage_percent);
     const riskLevel = payload?.risk_level ?? 'NONE';
 
     return {
@@ -185,7 +185,15 @@ function normalizeOptionalNumber(value?: number) {
     return undefined;
   }
 
-  return value;
+  return Math.round(value * 100) / 100;
+}
+
+function normalizePercentage(value?: number) {
+  if (typeof value !== 'number' || Number.isNaN(value)) {
+    return undefined;
+  }
+
+  return Math.round(value * 10) / 10;
 }
 
 function mapClassificationToLabel(
