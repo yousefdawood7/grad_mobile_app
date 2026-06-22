@@ -1,13 +1,19 @@
-﻿import { CameraView, useCameraPermissions } from 'expo-camera';
+import { CameraRatio, CameraView, useCameraPermissions } from 'expo-camera';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Platform, StyleSheet, Text, View } from 'react-native';
 
 import { AppButton } from '../../src/components/ui/app-button';
 import { Screen } from '../../src/components/ui/screen';
 import { DetectionOverlay } from '../../src/features/classification/components/detection-overlay';
-import { createLiveDetectionSocket, LiveDetectionMessage } from '../../src/features/classification/service';
+import {
+  createLiveDetectionSocket,
+  LiveDetectionMessage,
+  normalizeBoxes,
+} from '../../src/features/classification/service';
 import { BoundingBox, RiskLevel } from '../../src/features/classification/types';
 import { palette } from '../../src/theme/palette';
+
+const FRAME_INTERVAL_MS = 450;
 
 type LivePrediction = {
   boxes: BoundingBox[];
@@ -26,16 +32,35 @@ export default function LiveDetectScreen() {
   const socketRef = useRef<WebSocket | null>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isCapturingRef = useRef(false);
+  const manuallyStoppedRef = useRef(false);
+  const lastSentFrameIdRef = useRef<string | null>(null);
 
   const [permission, requestPermission] = useCameraPermissions();
+  const [cameraReady, setCameraReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isStreaming, setIsStreaming] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
   const [prediction, setPrediction] = useState<LivePrediction | null>(null);
+  const [lastUpdatedAt, setLastUpdatedAt] = useState<number | null>(null);
 
-  useEffect(() => () => {
-    stopStreaming();
+  useEffect(() => {
+    return () => {
+      stopStreaming(false);
+    };
   }, []);
+
+  useEffect(() => {
+    if (
+      permission?.granted &&
+      cameraReady &&
+      !isStreaming &&
+      !isConnecting &&
+      !socketRef.current &&
+      !manuallyStoppedRef.current
+    ) {
+      void handleStart();
+    }
+  }, [cameraReady, isConnecting, isStreaming, permission?.granted]);
 
   const statusText = useMemo(() => {
     if (error) {
@@ -47,42 +72,66 @@ export default function LiveDetectScreen() {
     }
 
     if (isStreaming) {
-      return 'Streaming frames to the EC2 detector.';
+      if (prediction?.boxes?.length) {
+        return `Live detection active. ${prediction.boxes.length} region(s) tracked on the camera preview.`;
+      }
+
+      if (lastUpdatedAt) {
+        return 'Live detection active. Frames are reaching the backend, but no object is currently being detected.';
+      }
+
+      return 'Live detection active. Point the camera at the plant and wait for the first detection.';
     }
 
-    return 'Start live detection to stream camera frames and draw borders around detections.';
-  }, [error, isConnecting, isStreaming]);
+    return 'Grant camera access and the app will start live detection automatically.';
+  }, [error, isConnecting, isStreaming, lastUpdatedAt, prediction?.boxes?.length]);
 
-  const clearTimer = () => {
+  const clearLoop = () => {
     if (timerRef.current) {
       clearTimeout(timerRef.current);
       timerRef.current = null;
     }
   };
 
-  const stopStreaming = () => {
-    clearTimer();
-    isCapturingRef.current = false;
-    setIsConnecting(false);
-    setIsStreaming(false);
-    socketRef.current?.close();
-    socketRef.current = null;
-  };
-
-  const scheduleNextFrame = () => {
-    clearTimer();
+  const queueNextFrame = () => {
+    clearLoop();
     timerRef.current = setTimeout(() => {
       void captureAndSendFrame();
-    }, 900);
+    }, FRAME_INTERVAL_MS);
+  };
+
+  const stopStreaming = (manual: boolean) => {
+    manuallyStoppedRef.current = manual;
+    clearLoop();
+    isCapturingRef.current = false;
+    lastSentFrameIdRef.current = null;
+    setIsConnecting(false);
+    setIsStreaming(false);
+
+    if (socketRef.current) {
+      const socket = socketRef.current;
+      socketRef.current = null;
+      socket.onopen = null;
+      socket.onmessage = null;
+      socket.onerror = null;
+      socket.onclose = null;
+      if (
+        socket.readyState === WebSocket.OPEN ||
+        socket.readyState === WebSocket.CONNECTING
+      ) {
+        socket.close();
+      }
+    }
   };
 
   const captureAndSendFrame = async () => {
     if (!socketRef.current || socketRef.current.readyState !== WebSocket.OPEN) {
+      queueNextFrame();
       return;
     }
 
     if (!cameraRef.current || isCapturingRef.current) {
-      scheduleNextFrame();
+      queueNextFrame();
       return;
     }
 
@@ -92,17 +141,18 @@ export default function LiveDetectScreen() {
         base64: true,
         imageType: 'jpg',
         quality: 0.4,
-        skipProcessing: true,
       });
 
       if (!photo.base64) {
-        scheduleNextFrame();
+        queueNextFrame();
         return;
       }
 
+      const frameId = `${Date.now()}`;
+      lastSentFrameIdRef.current = frameId;
       socketRef.current.send(
         JSON.stringify({
-          frame_id: `${Date.now()}`,
+          frame_id: frameId,
           image_base64: `data:image/jpeg;base64,${photo.base64}`,
         }),
       );
@@ -112,7 +162,7 @@ export default function LiveDetectScreen() {
           ? captureError.message
           : 'Unable to capture a live frame.',
       );
-      stopStreaming();
+      stopStreaming(false);
     } finally {
       isCapturingRef.current = false;
     }
@@ -120,6 +170,7 @@ export default function LiveDetectScreen() {
 
   const handleStart = async () => {
     setError(null);
+    manuallyStoppedRef.current = false;
 
     if (!permission?.granted) {
       const next = await requestPermission();
@@ -127,6 +178,10 @@ export default function LiveDetectScreen() {
         setError('Camera permission is required for live detection.');
         return;
       }
+    }
+
+    if (!cameraReady) {
+      return;
     }
 
     try {
@@ -137,7 +192,7 @@ export default function LiveDetectScreen() {
       socket.onopen = () => {
         setIsConnecting(false);
         setIsStreaming(true);
-        scheduleNextFrame();
+        void captureAndSendFrame();
       };
 
       socket.onmessage = (event) => {
@@ -145,11 +200,12 @@ export default function LiveDetectScreen() {
 
         if (payload.detail) {
           setError(payload.detail);
+          queueNextFrame();
           return;
         }
 
         setPrediction({
-          boxes: payload.boxes ?? [],
+          boxes: normalizeBoxes(payload.boxes),
           classification: payload.classification ?? 'unknown',
           classificationConfidence: payload.classification_confidence,
           coveragePercent: payload.coverage_percent,
@@ -159,17 +215,24 @@ export default function LiveDetectScreen() {
           imageWidth: payload.image_width,
           riskLevel: payload.risk_level,
         });
-
-        scheduleNextFrame();
+        setLastUpdatedAt(Date.now());
+        if (!manuallyStoppedRef.current && payload.frame_id === lastSentFrameIdRef.current) {
+          queueNextFrame();
+        }
       };
 
       socket.onerror = () => {
-        setError('Live detection socket failed. Check the EC2 websocket endpoint.');
-        stopStreaming();
+        setError(
+          'Live detection socket failed. Check that the EC2 websocket endpoint is reachable from the phone.',
+        );
+        stopStreaming(false);
       };
 
       socket.onclose = () => {
-        stopStreaming();
+        clearLoop();
+        setIsConnecting(false);
+        setIsStreaming(false);
+        socketRef.current = null;
       };
     } catch (socketError) {
       setError(
@@ -177,7 +240,7 @@ export default function LiveDetectScreen() {
           ? socketError.message
           : 'Unable to start live detection.',
       );
-      stopStreaming();
+      stopStreaming(false);
     }
   };
 
@@ -191,7 +254,18 @@ export default function LiveDetectScreen() {
             imageWidth={prediction?.imageWidth}
             style={styles.previewFrame}
           >
-            <CameraView facing="back" ref={cameraRef} style={styles.camera} />
+            <CameraView
+              active
+              facing="back"
+              mode="picture"
+              mirror={false}
+              onCameraReady={() => setCameraReady(true)}
+              onMountError={(mountError) => setError(mountError.message)}
+              pictureSize="640x480"
+              ratio={(Platform.OS === 'android' ? ('4:3' as CameraRatio) : undefined)}
+              ref={cameraRef}
+              style={styles.camera}
+            />
           </DetectionOverlay>
         ) : (
           <View style={styles.permissionCard}>
@@ -208,22 +282,55 @@ export default function LiveDetectScreen() {
         <Text style={styles.sectionTitle}>Live detection</Text>
         <Text style={styles.statusBody}>{statusText}</Text>
         <View style={styles.metricRow}>
-          <MetricCard label="Class" value={formatClassification(prediction?.classification)} />
-          <MetricCard label="Coverage" value={prediction?.coveragePercent != null ? `${prediction.coveragePercent}%` : '--'} />
+          <MetricCard
+            label="Class"
+            value={formatClassification(prediction?.classification)}
+          />
+          <MetricCard
+            label="Coverage"
+            value={
+              prediction?.coveragePercent != null
+                ? `${prediction.coveragePercent}%`
+                : '--'
+            }
+          />
           <MetricCard label="Risk" value={prediction?.riskLevel ?? '--'} />
         </View>
         <View style={styles.metricRow}>
-          <MetricCard label="Regions" value={`${prediction?.detectedRegions ?? prediction?.boxes.length ?? 0}`} />
-          <MetricCard label="Class conf." value={prediction?.classificationConfidence != null ? `${Math.round(prediction.classificationConfidence * 100)}%` : '--'} />
-          <MetricCard label="Det. conf." value={prediction?.detectionConfidence != null ? `${Math.round(prediction.detectionConfidence * 100)}%` : '--'} />
+          <MetricCard
+            label="Regions"
+            value={`${prediction?.detectedRegions ?? prediction?.boxes.length ?? 0}`}
+          />
+          <MetricCard
+            label="Class conf."
+            value={
+              prediction?.classificationConfidence != null
+                ? `${Math.round(prediction.classificationConfidence * 100)}%`
+                : '--'
+            }
+          />
+          <MetricCard
+            label="Det. conf."
+            value={
+              prediction?.detectionConfidence != null
+                ? `${Math.round(prediction.detectionConfidence * 100)}%`
+                : '--'
+            }
+          />
         </View>
         <View style={styles.actions}>
           {isStreaming || isConnecting ? (
-            <AppButton label="Stop live detection" onPress={stopStreaming} tone="danger" />
+            <AppButton
+              label="Stop live detection"
+              onPress={() => stopStreaming(true)}
+              tone="danger"
+            />
           ) : (
-            <AppButton label="Start live detection" onPress={() => void handleStart()} />
+            <AppButton label="Restart live detection" onPress={() => void handleStart()} />
           )}
-          {(isStreaming || isConnecting) ? <ActivityIndicator color={palette.brandDeep} /> : null}
+          {isStreaming || isConnecting ? (
+            <ActivityIndicator color={palette.brandDeep} />
+          ) : null}
         </View>
       </View>
     </Screen>
@@ -344,3 +451,6 @@ const styles = StyleSheet.create({
     gap: 12,
   },
 });
+
+
+

@@ -1,5 +1,12 @@
-﻿import { useMemo, useState } from 'react';
-import { LayoutChangeEvent, StyleSheet, Text, View, ViewStyle } from 'react-native';
+import { useMemo, useState } from 'react';
+import {
+  LayoutChangeEvent,
+  StyleProp,
+  StyleSheet,
+  Text,
+  View,
+  ViewStyle,
+} from 'react-native';
 
 import { palette } from '../../../theme/palette';
 import { BoundingBox } from '../types';
@@ -9,7 +16,7 @@ type DetectionOverlayProps = {
   imageHeight?: number;
   imageWidth?: number;
   labelColor?: string;
-  style?: ViewStyle;
+  style?: StyleProp<ViewStyle>;
   children: React.ReactNode;
 };
 

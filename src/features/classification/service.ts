@@ -1,4 +1,4 @@
-﻿import { Platform } from 'react-native';
+import { Platform } from 'react-native';
 
 import { env } from '../../config/env';
 import { BoundingBox, ClassificationRecord, PendingAsset, RiskLevel } from './types';
@@ -65,6 +65,22 @@ export function createLiveDetectionSocket() {
   }
 
   return new WebSocket(env.modelApiWsUrl);
+}
+
+export function normalizeBoxes(boxes?: RemoteBoundingBox[]): BoundingBox[] {
+  if (!boxes?.length) {
+    return [];
+  }
+
+  return boxes.map((box) => ({
+    confidence: box.confidence ?? 0,
+    height: box.height ?? Math.max(0, (box.y2 ?? 0) - (box.y1 ?? 0)),
+    width: box.width ?? Math.max(0, (box.x2 ?? 0) - (box.x1 ?? 0)),
+    x1: box.x1 ?? 0,
+    x2: box.x2 ?? 0,
+    y1: box.y1 ?? 0,
+    y2: box.y2 ?? 0,
+  }));
 }
 
 async function runRemoteClassification(
@@ -170,22 +186,6 @@ function normalizeOptionalNumber(value?: number) {
   }
 
   return value;
-}
-
-function normalizeBoxes(boxes?: RemoteBoundingBox[]): BoundingBox[] {
-  if (!boxes?.length) {
-    return [];
-  }
-
-  return boxes.map((box) => ({
-    confidence: box.confidence ?? 0,
-    height: box.height ?? Math.max(0, (box.y2 ?? 0) - (box.y1 ?? 0)),
-    width: box.width ?? Math.max(0, (box.x2 ?? 0) - (box.x1 ?? 0)),
-    x1: box.x1 ?? 0,
-    x2: box.x2 ?? 0,
-    y1: box.y1 ?? 0,
-    y2: box.y2 ?? 0,
-  }));
 }
 
 function mapClassificationToLabel(
