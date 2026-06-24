@@ -20,8 +20,8 @@ import {
 import { BoundingBox, RiskLevel } from '../../src/features/classification/types';
 import { palette } from '../../src/theme/palette';
 
-/** Small cooldown to avoid back-to-back captures on very fast connections */
-const MIN_FRAME_GAP_MS = 80;
+/** Cooldown between frames — keeps results stable and avoids flooding the server */
+const MIN_FRAME_GAP_MS = 350;
 
 type QualityPreset = 'fast' | 'balanced' | 'best';
 
@@ -274,7 +274,11 @@ export default function LiveDetectScreen() {
       <View style={styles.previewCard}>
         {permission?.granted ? (
           <DetectionOverlay
-            boxes={prediction?.boxes ?? []}
+            boxes={
+              prediction?.classification === 'water_hyacinth'
+                ? (prediction?.boxes ?? [])
+                : []
+            }
             imageHeight={prediction?.imageHeight}
             imageWidth={prediction?.imageWidth}
             style={styles.previewFrame}
