@@ -238,6 +238,7 @@ export function SessionProvider({ children }: PropsWithChildren) {
         const redirectTo = Linking.createURL('auth/callback', {
           scheme: 'waterhyacinth',
         });
+        console.log('[Auth] Google Sign-In Redirect URL:', redirectTo);
         const { data, error } = await supabase.auth.signInWithOAuth({
           provider: 'google',
           options: {
@@ -269,10 +270,27 @@ export function SessionProvider({ children }: PropsWithChildren) {
           };
         }
 
-        const callbackUrl = new URL(result.url);
-        const callbackError =
-          callbackUrl.searchParams.get('error_description') ??
-          callbackUrl.searchParams.get('error');
+        let authCode: string | null = null;
+        let callbackError: string | null = null;
+
+        try {
+          const callbackUrl = new URL(result.url);
+          authCode = callbackUrl.searchParams.get('code');
+          callbackError =
+            callbackUrl.searchParams.get('error_description') ??
+            callbackUrl.searchParams.get('error');
+        } catch {
+          // Fallback parser using regex in case new URL() fails on custom mobile schemes
+          const codeMatch = result.url.match(/[?&]code=([^&#]+)/);
+          authCode = codeMatch ? decodeURIComponent(codeMatch[1]) : null;
+          const errorMatch = result.url.match(/[?&]error=([^&#]+)/);
+          const descMatch = result.url.match(/[?&]error_description=([^&#]+)/);
+          callbackError = descMatch
+            ? decodeURIComponent(descMatch[1])
+            : errorMatch
+              ? decodeURIComponent(errorMatch[1])
+              : null;
+        }
 
         if (callbackError) {
           return {
@@ -280,8 +298,6 @@ export function SessionProvider({ children }: PropsWithChildren) {
             ok: false,
           };
         }
-
-        const authCode = callbackUrl.searchParams.get('code');
 
         if (!authCode) {
           return {
