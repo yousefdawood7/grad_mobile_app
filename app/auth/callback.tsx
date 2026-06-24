@@ -79,6 +79,17 @@ export default function AuthCallbackScreen() {
       );
 
       if (error) {
+        // If the code was already exchanged by the session provider, we might already have a session.
+        const { data: { session: currentSession } } = await supabase.auth.getSession();
+        if (currentSession) {
+          if (Platform.OS === 'web') {
+            window.location.replace('/');
+          } else {
+            router.replace('/(app)/home');
+          }
+          return;
+        }
+
         if (mounted) {
           setErrorMessage(error.message);
         }
