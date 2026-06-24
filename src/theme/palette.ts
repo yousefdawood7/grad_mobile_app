@@ -1,4 +1,4 @@
-export const palette = {
+export const lightPalette = {
   background: '#F6FBFA',
   border: '#D8E5E2',
   brand: '#0F9F77',
@@ -17,6 +17,30 @@ export const palette = {
   white: '#FFFFFF',
   whiteMuted: 'rgba(255,255,255,0.78)',
 } as const;
+
+export const darkPalette = {
+  background: '#0B1313',
+  border: '#1E2F2C',
+  brand: '#12B886',
+  brandDeep: '#22A3F6',
+  danger: '#FF6B6B',
+  dangerSoft: '#2C1B1B',
+  info: '#33B5E5',
+  success: '#12B886',
+  successSoft: '#0E2420',
+  surface: '#121F1D',
+  text: '#F1F7F6',
+  textMuted: '#A0B4B1',
+  textSoft: '#708885',
+  warning: '#FCC419',
+  warningSoft: '#2E230C',
+  white: '#FFFFFF',
+  whiteMuted: 'rgba(255,255,255,0.78)',
+} as const;
+
+export const palette = lightPalette;
+
+export type ThemePalette = Record<keyof typeof lightPalette, string>;
 
 /**
  * Platform-aware shadow presets.

@@ -3,14 +3,16 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import { AppButton } from '../src/components/ui/app-button';
 import { Screen } from '../src/components/ui/screen';
-import { palette } from '../src/theme/palette';
+import { useTheme } from '../src/providers/theme-provider';
 
 export default function NotFoundScreen() {
+  const { colors } = useTheme();
+
   return (
     <Screen contentContainerStyle={styles.container}>
-      <View style={styles.card}>
-        <Text style={styles.title}>Page not found</Text>
-        <Text style={styles.body}>
+      <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+        <Text style={[styles.title, { color: colors.text }]}>Page not found</Text>
+        <Text style={[styles.body, { color: colors.textMuted }]}>
           This route does not exist in the current build.
         </Text>
         <Link href="/(app)/home" asChild>
@@ -27,8 +29,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   card: {
-    backgroundColor: palette.surface,
-    borderColor: palette.border,
     borderCurve: 'continuous',
     borderRadius: 28,
     borderWidth: 1,
@@ -36,12 +36,10 @@ const styles = StyleSheet.create({
     padding: 24,
   },
   title: {
-    color: palette.text,
     fontSize: 24,
     fontWeight: '700',
   },
   body: {
-    color: palette.textMuted,
     fontSize: 15,
     lineHeight: 22,
   },

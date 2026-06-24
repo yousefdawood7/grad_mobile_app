@@ -7,19 +7,20 @@ import { AppButton } from '../../../src/components/ui/app-button';
 import { Screen } from '../../../src/components/ui/screen';
 import { DetectionOverlay } from '../../../src/features/classification/components/detection-overlay';
 import { useClassification } from '../../../src/providers/classification-provider';
-import { palette } from '../../../src/theme/palette';
+import { useTheme } from '../../../src/providers/theme-provider';
 
 export default function ResultScreen() {
   const params = useLocalSearchParams<{ recordId: string }>();
   const { getRecordById } = useClassification();
   const record = getRecordById(params.recordId);
+  const { colors } = useTheme();
 
   if (!record) {
     return (
       <Screen contentContainerStyle={styles.container}>
-        <View style={styles.card}>
-          <Text style={styles.title}>Result not found</Text>
-          <Text style={styles.body}>
+        <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          <Text style={[styles.title, { color: colors.text }]}>Result not found</Text>
+          <Text style={[styles.body, { color: colors.textMuted }]}>
             The selected record is unavailable. Open history and run a new
             analysis if needed.
           </Text>
@@ -37,13 +38,14 @@ export default function ResultScreen() {
 
   return (
     <Screen contentContainerStyle={styles.container}>
-      <View style={styles.card}>
+      <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
         <DetectionOverlay
           boxes={showBorders && record.isPositive ? (record.boxes ?? []) : []}
           imageHeight={record.imageHeight}
           imageWidth={record.imageWidth}
           style={[
             styles.imageFrame,
+            { backgroundColor: colors.background },
             hasDimensions && record.imageWidth && record.imageHeight
               ? { aspectRatio: record.imageWidth / record.imageHeight }
               : null,
@@ -60,35 +62,45 @@ export default function ResultScreen() {
           <Text
             style={[
               styles.status,
-              record.isPositive ? styles.statusPositive : styles.statusNeutral,
+              { color: record.isPositive ? colors.danger : colors.brandDeep },
             ]}
           >
             {record.label}
           </Text>
-          <Text style={styles.confidence}>Confidence: {record.confidence}%</Text>
+          <Text style={[styles.confidence, { color: colors.textMuted }]}>Confidence: {record.confidence}%</Text>
         </View>
         <View style={styles.metricRow}>
           <MetricCard label="Coverage" value={record.coveragePercent != null ? `${record.coveragePercent.toFixed(1)}%` : '--'} />
           <MetricCard label="Regions" value={`${record.detectedRegions ?? record.boxes?.length ?? 0}`} />
           <MetricCard label="Risk" value={record.riskLevel ?? '--'} />
         </View>
-        <View style={styles.progressTrack}>
-          <View style={[styles.progressFill, { width: progressWidth }]} />
+        <View style={[styles.progressTrack, { backgroundColor: colors.border }]}>
+          <View style={[styles.progressFill, { width: progressWidth, backgroundColor: colors.danger }]} />
         </View>
         <Pressable
           onPress={() => setShowBorders((prev) => !prev)}
-          style={[styles.bordersToggle, showBorders && styles.bordersToggleActive]}
+          style={[
+            styles.bordersToggle,
+            { backgroundColor: colors.background, borderColor: colors.border },
+            showBorders && { backgroundColor: colors.successSoft, borderColor: colors.brand },
+          ]}
         >
-          <Text style={[styles.bordersToggleText, showBorders && styles.bordersToggleTextActive]}>
+          <Text
+            style={[
+              styles.bordersToggleText,
+              { color: colors.textMuted },
+              showBorders && { color: colors.brand },
+            ]}
+          >
             {showBorders ? 'Hide borders' : 'Show borders'}
           </Text>
         </Pressable>
       </View>
 
-      <View style={styles.card}>
-        <Text style={styles.sectionTitle}>Recommendation</Text>
-        <Text style={styles.body}>{record.recommendation}</Text>
-        <Text style={styles.meta}>Model version: {record.modelVersion}</Text>
+      <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+        <Text style={[styles.sectionTitle, { color: colors.text }]}>Recommendation</Text>
+        <Text style={[styles.body, { color: colors.textMuted }]}>{record.recommendation}</Text>
+        <Text style={[styles.meta, { color: colors.textSoft }]}>Model version: {record.modelVersion}</Text>
       </View>
 
       <View style={styles.actions}>
@@ -110,10 +122,11 @@ export default function ResultScreen() {
 }
 
 function MetricCard({ label, value }: { label: string; value: string }) {
+  const { colors } = useTheme();
   return (
-    <View style={styles.metricCard}>
-      <Text style={styles.metricValue}>{value}</Text>
-      <Text style={styles.metricLabel}>{label}</Text>
+    <View style={[styles.metricCard, { backgroundColor: colors.background, borderColor: colors.border }]}>
+      <Text style={[styles.metricValue, { color: colors.text }]}>{value}</Text>
+      <Text style={[styles.metricLabel, { color: colors.textMuted }]}>{label}</Text>
     </View>
   );
 }
@@ -124,8 +137,6 @@ const styles = StyleSheet.create({
     paddingBottom: 32,
   },
   card: {
-    backgroundColor: palette.surface,
-    borderColor: palette.border,
     borderCurve: 'continuous',
     borderRadius: 28,
     borderWidth: 1,
@@ -133,7 +144,6 @@ const styles = StyleSheet.create({
     padding: 18,
   },
   imageFrame: {
-    backgroundColor: '#E9F2EF',
     borderCurve: 'continuous',
     borderRadius: 22,
     minHeight: 220,
@@ -151,14 +161,7 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: '800',
   },
-  statusPositive: {
-    color: palette.danger,
-  },
-  statusNeutral: {
-    color: palette.brandDeep,
-  },
   confidence: {
-    color: palette.textMuted,
     fontSize: 14,
     fontWeight: '600',
   },
@@ -167,8 +170,6 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   metricCard: {
-    backgroundColor: palette.background,
-    borderColor: palette.border,
     borderCurve: 'continuous',
     borderRadius: 18,
     borderWidth: 1,
@@ -177,44 +178,36 @@ const styles = StyleSheet.create({
     padding: 12,
   },
   metricValue: {
-    color: palette.text,
     fontSize: 16,
     fontWeight: '800',
   },
   metricLabel: {
-    color: palette.textMuted,
     fontSize: 11,
     fontWeight: '700',
     textTransform: 'uppercase',
   },
   progressTrack: {
-    backgroundColor: palette.border,
     borderCurve: 'continuous',
     borderRadius: 99,
     height: 8,
     overflow: 'hidden',
   },
   progressFill: {
-    backgroundColor: palette.danger,
     height: '100%',
   },
   sectionTitle: {
-    color: palette.text,
     fontSize: 18,
     fontWeight: '700',
   },
   title: {
-    color: palette.text,
     fontSize: 24,
     fontWeight: '800',
   },
   body: {
-    color: palette.textMuted,
     fontSize: 14,
     lineHeight: 21,
   },
   meta: {
-    color: palette.textSoft,
     fontSize: 12,
     fontWeight: '600',
   },
@@ -223,8 +216,6 @@ const styles = StyleSheet.create({
   },
   bordersToggle: {
     alignItems: 'center',
-    backgroundColor: palette.background,
-    borderColor: palette.border,
     borderCurve: 'continuous',
     borderRadius: 14,
     borderWidth: 1,
@@ -232,16 +223,8 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     marginTop: 6,
   },
-  bordersToggleActive: {
-    backgroundColor: palette.successSoft,
-    borderColor: palette.brand,
-  },
   bordersToggleText: {
-    color: palette.textMuted,
     fontSize: 14,
     fontWeight: '700',
-  },
-  bordersToggleTextActive: {
-    color: palette.brand,
   },
 });

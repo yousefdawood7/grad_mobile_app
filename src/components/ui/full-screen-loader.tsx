@@ -1,7 +1,7 @@
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 
 import { Screen } from './screen';
-import { palette } from '../../theme/palette';
+import { useTheme } from '../../providers/theme-provider';
 
 type FullScreenLoaderProps = {
   children?: React.ReactNode;
@@ -14,19 +14,23 @@ export function FullScreenLoader({
   label,
   secondaryLabel,
 }: FullScreenLoaderProps) {
+  const { colors } = useTheme();
+
   return (
     <Screen contentContainerStyle={styles.container} scrollEnabled={false}>
       <View style={styles.rings}>
-        <View style={styles.ringOuter}>
-          <View style={styles.ringMiddle}>
-            <View style={styles.ringInner}>
-              <ActivityIndicator color={palette.white} />
+        <View style={[styles.ringOuter, { borderColor: colors.info }]}>
+          <View style={[styles.ringMiddle, { borderColor: colors.info }]}>
+            <View style={[styles.ringInner, { backgroundColor: colors.info }]}>
+              <ActivityIndicator color={colors.white} />
             </View>
           </View>
         </View>
       </View>
-      <Text style={styles.label}>{label}</Text>
-      {secondaryLabel ? <Text style={styles.secondaryLabel}>{secondaryLabel}</Text> : null}
+      <Text style={[styles.label, { color: colors.text }]}>{label}</Text>
+      {secondaryLabel ? (
+        <Text style={[styles.secondaryLabel, { color: colors.textMuted }]}>{secondaryLabel}</Text>
+      ) : null}
       {children}
     </Screen>
   );
@@ -43,7 +47,6 @@ const styles = StyleSheet.create({
   },
   ringOuter: {
     alignItems: 'center',
-    borderColor: palette.info,
     borderCurve: 'continuous',
     borderRadius: 999,
     borderWidth: 2,
@@ -53,7 +56,6 @@ const styles = StyleSheet.create({
   },
   ringMiddle: {
     alignItems: 'center',
-    borderColor: palette.info,
     borderCurve: 'continuous',
     borderRadius: 999,
     borderWidth: 2,
@@ -63,7 +65,6 @@ const styles = StyleSheet.create({
   },
   ringInner: {
     alignItems: 'center',
-    backgroundColor: palette.info,
     borderCurve: 'continuous',
     borderRadius: 999,
     height: 52,
@@ -71,13 +72,11 @@ const styles = StyleSheet.create({
     width: 52,
   },
   label: {
-    color: palette.text,
     fontSize: 24,
     fontWeight: '800',
     textAlign: 'center',
   },
   secondaryLabel: {
-    color: palette.textMuted,
     fontSize: 14,
     lineHeight: 22,
     marginTop: 8,

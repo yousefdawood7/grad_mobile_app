@@ -8,7 +8,7 @@ import { Field } from '../../src/components/ui/field';
 import { Screen } from '../../src/components/ui/screen';
 import { getProfile } from '../../src/features/profile/repository';
 import { useSession } from '../../src/providers/session-provider';
-import { palette } from '../../src/theme/palette';
+import { useTheme } from '../../src/providers/theme-provider';
 
 export default function ProfileScreen() {
   const {
@@ -18,6 +18,7 @@ export default function ProfileScreen() {
     user,
     userLabel,
   } = useSession();
+  const { colors, themeMode, setThemeMode } = useTheme();
   const [fullName, setFullName] = useState(user.fullName ?? '');
   const [avatarUri, setAvatarUri] = useState<string | null>(user.avatarUrl ?? null);
   const [isSaving, setIsSaving] = useState(false);
@@ -96,22 +97,53 @@ export default function ProfileScreen() {
 
   return (
     <Screen contentContainerStyle={styles.container}>
-      <View style={styles.card}>
-        <Text style={styles.title}>Account</Text>
-        <Text style={styles.itemTitle}>Current mode</Text>
-        <Text style={styles.itemBody}>
+      <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+        <Text style={[styles.title, { color: colors.text }]}>Account</Text>
+        
+        <Text style={[styles.itemTitle, { color: colors.textMuted }]}>Current mode</Text>
+        <Text style={[styles.itemBody, { color: colors.text }]}>
           {authState === 'authenticated' ? 'Signed in' : 'Guest mode'}
         </Text>
-        <Text style={styles.itemTitle}>Identity</Text>
-        <Text style={styles.itemBody}>{userLabel}</Text>
-        <Text style={styles.itemTitle}>Email</Text>
-        <Text style={styles.itemBody}>{user.email ?? 'No email available'}</Text>
-        <Text style={styles.itemTitle}>User ID</Text>
-        <Text style={styles.itemBody}>{user.id ?? 'No authenticated user'}</Text>
+        
+        <Text style={[styles.itemTitle, { color: colors.textMuted }]}>Identity</Text>
+        <Text style={[styles.itemBody, { color: colors.text }]}>{userLabel}</Text>
+        
+        <Text style={[styles.itemTitle, { color: colors.textMuted }]}>Email</Text>
+        <Text style={[styles.itemBody, { color: colors.text }]}>{user.email ?? 'No email available'}</Text>
+        
+        <Text style={[styles.itemTitle, { color: colors.textMuted }]}>User ID</Text>
+        <Text style={[styles.itemBody, { color: colors.text }]}>{user.id ?? 'No authenticated user'}</Text>
       </View>
 
-      <View style={styles.card}>
-        <Text style={styles.title}>Profile details</Text>
+      <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+        <Text style={[styles.title, { color: colors.text }]}>App Theme</Text>
+        <Text style={[styles.itemBody, { color: colors.textMuted, marginBottom: 8 }]}>
+          Choose how the application colors look on your device.
+        </Text>
+        <View style={styles.themeGroup}>
+          <AppButton
+            label="System"
+            onPress={() => setThemeMode('system')}
+            tone={themeMode === 'system' ? 'primary' : 'surface'}
+            style={styles.themeBtn}
+          />
+          <AppButton
+            label="Light"
+            onPress={() => setThemeMode('light')}
+            tone={themeMode === 'light' ? 'primary' : 'surface'}
+            style={styles.themeBtn}
+          />
+          <AppButton
+            label="Dark"
+            onPress={() => setThemeMode('dark')}
+            tone={themeMode === 'dark' ? 'primary' : 'surface'}
+            style={styles.themeBtn}
+          />
+        </View>
+      </View>
+
+      <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+        <Text style={[styles.title, { color: colors.text }]}>Profile details</Text>
         {authState === 'authenticated' ? (
           <>
             <Field
@@ -124,7 +156,7 @@ export default function ProfileScreen() {
             {/* Avatar row — photo + pick button side by side */}
             <View style={styles.avatarRow}>
               {avatarUri ? (
-                <View style={styles.avatarWrap}>
+                <View style={[styles.avatarWrap, { borderColor: colors.border }]}>
                   <Image
                     contentFit="cover"
                     source={{ uri: avatarUri }}
@@ -133,8 +165,8 @@ export default function ProfileScreen() {
                   />
                 </View>
               ) : (
-                <View style={styles.avatarPlaceholder}>
-                  <Text style={styles.avatarPlaceholderText}>No photo</Text>
+                <View style={[styles.avatarPlaceholder, { backgroundColor: colors.background, borderColor: colors.border }]}>
+                  <Text style={[styles.avatarPlaceholderText, { color: colors.textSoft }]}>No photo</Text>
                 </View>
               )}
               <AppButton
@@ -150,14 +182,14 @@ export default function ProfileScreen() {
               onPress={saveProfile}
             />
             {profileError ? (
-              <Text style={styles.errorText}>{profileError}</Text>
+              <Text style={[styles.errorText, { color: colors.danger }]}>{profileError}</Text>
             ) : null}
             {profileMessage ? (
-              <Text style={styles.successText}>{profileMessage}</Text>
+              <Text style={[styles.successText, { color: colors.success }]}>{profileMessage}</Text>
             ) : null}
           </>
         ) : (
-          <Text style={styles.itemBody}>
+          <Text style={[styles.itemBody, { color: colors.text }]}>
             Sign in to edit your profile details.
           </Text>
         )}
@@ -174,8 +206,6 @@ const styles = StyleSheet.create({
     paddingBottom: 32,
   },
   card: {
-    backgroundColor: palette.surface,
-    borderColor: palette.border,
     borderCurve: 'continuous',
     borderRadius: 28,
     borderWidth: 1,
@@ -183,29 +213,24 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   title: {
-    color: palette.text,
     fontSize: 20,
     fontWeight: '800',
     marginBottom: 2,
   },
   itemTitle: {
-    color: palette.textMuted,
     fontSize: 13,
     fontWeight: '700',
     textTransform: 'uppercase',
   },
   itemBody: {
-    color: palette.text,
     fontSize: 15,
     lineHeight: 22,
   },
   errorText: {
-    color: palette.danger,
     fontSize: 13,
     fontWeight: '600',
   },
   successText: {
-    color: palette.success,
     fontSize: 13,
     fontWeight: '600',
   },
@@ -215,7 +240,6 @@ const styles = StyleSheet.create({
     gap: 14,
   },
   avatarWrap: {
-    borderColor: palette.border,
     borderCurve: 'continuous',
     borderRadius: 40,
     borderWidth: 2,
@@ -229,8 +253,6 @@ const styles = StyleSheet.create({
   },
   avatarPlaceholder: {
     alignItems: 'center',
-    backgroundColor: palette.background,
-    borderColor: palette.border,
     borderCurve: 'continuous',
     borderRadius: 40,
     borderStyle: 'dashed',
@@ -240,8 +262,16 @@ const styles = StyleSheet.create({
     width: 80,
   },
   avatarPlaceholderText: {
-    color: palette.textSoft,
     fontSize: 11,
     fontWeight: '600',
+  },
+  themeGroup: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 4,
+  },
+  themeBtn: {
+    flex: 1,
+    minHeight: 46,
   },
 });

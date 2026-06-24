@@ -11,11 +11,12 @@ import { createPersistentAssetUri } from '../../src/features/classification/asse
 import { TipsCard } from '../../src/features/classification/components/tips-card';
 import { ensureMediaLibraryPermission } from '../../src/features/permissions/media';
 import { useClassification } from '../../src/providers/classification-provider';
-import { palette } from '../../src/theme/palette';
+import { useTheme } from '../../src/providers/theme-provider';
 
 export default function UploadScreen() {
   const { pendingAsset, queuePendingAsset } = useClassification();
   const [permissionMessage, setPermissionMessage] = useState<string | null>(null);
+  const { colors } = useTheme();
 
   const navigateToAnalysis = () => {
     router.push('/(app)/analyzing');
@@ -79,7 +80,7 @@ export default function UploadScreen() {
 
   return (
     <Screen contentContainerStyle={styles.container}>
-      <View style={styles.previewCard}>
+      <View style={[styles.previewCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
         {pendingAsset ? (
           <Image
             contentFit="cover"
@@ -89,8 +90,8 @@ export default function UploadScreen() {
           />
         ) : (
           <View style={styles.emptyState}>
-            <Text style={styles.emptyTitle}>Choose a photo</Text>
-            <Text style={styles.emptyBody}>
+            <Text style={[styles.emptyTitle, { color: colors.text }]}>Choose a photo</Text>
+            <Text style={[styles.emptyBody, { color: colors.textMuted }]}>
               Import an image from your gallery or files to analyze it.
             </Text>
           </View>
@@ -102,7 +103,7 @@ export default function UploadScreen() {
         <AppButton label="Browse files" onPress={handleFile} tone="surface" />
       </View>
       {permissionMessage ? (
-        <Text style={styles.permissionText}>{permissionMessage}</Text>
+        <Text style={[styles.permissionText, { color: colors.warning }]}>{permissionMessage}</Text>
       ) : null}
 
       <TipsCard />
@@ -116,8 +117,6 @@ const styles = StyleSheet.create({
   },
   previewCard: {
     alignItems: 'center',
-    backgroundColor: palette.surface,
-    borderColor: palette.border,
     borderCurve: 'continuous',
     borderRadius: 28,
     borderStyle: 'dashed',
@@ -138,12 +137,10 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   emptyTitle: {
-    color: palette.text,
     fontSize: 18,
     fontWeight: '700',
   },
   emptyBody: {
-    color: palette.textMuted,
     fontSize: 14,
     lineHeight: 20,
     textAlign: 'center',
@@ -153,7 +150,6 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   permissionText: {
-    color: palette.warning,
     fontSize: 13,
     fontWeight: '600',
   },

@@ -6,11 +6,13 @@ import { AppButton } from '../../src/components/ui/app-button';
 import { Field } from '../../src/components/ui/field';
 import { Screen } from '../../src/components/ui/screen';
 import { useSession } from '../../src/providers/session-provider';
-import { palette, shadows } from '../../src/theme/palette';
+import { shadows } from '../../src/theme/palette';
+import { useTheme } from '../../src/providers/theme-provider';
 
 export default function VerifyOtpScreen() {
   const { email } = useLocalSearchParams<{ email: string }>();
   const { verifyOtp } = useSession();
+  const { colors } = useTheme();
   const [otpToken, setOtpToken] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -41,15 +43,15 @@ export default function VerifyOtpScreen() {
   return (
     <Screen contentContainerStyle={styles.container}>
       <View style={styles.header}>
-        <View style={styles.logoBadge}>
-          <Text style={styles.logoText}>WH</Text>
+        <View style={[styles.logoBadge, { backgroundColor: colors.brand }]}>
+          <Text style={[styles.logoText, { color: colors.white }]}>WH</Text>
         </View>
-        <Text style={styles.title}>Check your email</Text>
+        <Text style={[styles.title, { color: colors.text }]}>Check your email</Text>
       </View>
 
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Verify OTP</Text>
-        <Text style={styles.cardBody}>
+      <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+        <Text style={[styles.cardTitle, { color: colors.text }]}>Verify OTP</Text>
+        <Text style={[styles.cardBody, { color: colors.textMuted }]}>
           We sent a 6-digit verification code to {email}. Please enter it below.
         </Text>
 
@@ -90,7 +92,6 @@ const styles = StyleSheet.create({
   },
   logoBadge: {
     alignItems: 'center',
-    backgroundColor: palette.brand,
     borderCurve: 'continuous',
     borderRadius: 22,
     ...shadows.strong,
@@ -99,19 +100,15 @@ const styles = StyleSheet.create({
     width: 64,
   },
   logoText: {
-    color: palette.white,
     fontSize: 22,
     fontWeight: '800',
   },
   title: {
-    color: palette.text,
     fontSize: 28,
     fontWeight: '800',
     textAlign: 'center',
   },
   card: {
-    backgroundColor: palette.surface,
-    borderColor: palette.border,
     borderCurve: 'continuous',
     borderRadius: 30,
     borderWidth: 1,
@@ -120,13 +117,11 @@ const styles = StyleSheet.create({
     padding: 22,
   },
   cardTitle: {
-    color: palette.text,
     fontSize: 22,
     fontWeight: '700',
     textAlign: 'center',
   },
   cardBody: {
-    color: palette.textMuted,
     fontSize: 14,
     lineHeight: 22,
     textAlign: 'center',

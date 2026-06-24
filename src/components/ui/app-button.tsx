@@ -1,7 +1,7 @@
 import { forwardRef } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View, ViewStyle } from 'react-native';
 
-import { palette } from '../../theme/palette';
+import { useTheme } from '../../providers/theme-provider';
 
 type ButtonTone = 'primary' | 'secondary' | 'surface' | 'ghost' | 'danger';
 
@@ -25,8 +25,9 @@ export const AppButton = forwardRef<View, AppButtonProps>(function AppButton(
   },
   ref,
 ) {
-  const toneStyle = toneStyles[tone];
-  const textStyle = textStyles[tone];
+  const { colors } = useTheme();
+  const toneStyle = getToneStyle(tone, colors);
+  const textStyle = getTextStyle(tone, colors);
 
   return (
     <Pressable
@@ -73,40 +74,34 @@ const styles = StyleSheet.create({
   },
 });
 
-const toneStyles = StyleSheet.create({
-  primary: {
-    backgroundColor: palette.brand,
-  },
-  secondary: {
-    backgroundColor: palette.brandDeep,
-  },
-  surface: {
-    backgroundColor: palette.surface,
-    borderColor: palette.border,
-    borderWidth: 1,
-  },
-  ghost: {
-    backgroundColor: 'transparent',
-  },
-  danger: {
-    backgroundColor: palette.danger,
-  },
-});
+const getToneStyle = (tone: ButtonTone, colors: any): ViewStyle => {
+  switch (tone) {
+    case 'primary':
+      return { backgroundColor: colors.brand };
+    case 'secondary':
+      return { backgroundColor: colors.brandDeep };
+    case 'surface':
+      return {
+        backgroundColor: colors.surface,
+        borderColor: colors.border,
+        borderWidth: 1,
+      };
+    case 'ghost':
+      return { backgroundColor: 'transparent' };
+    case 'danger':
+      return { backgroundColor: colors.danger };
+  }
+};
 
-const textStyles = StyleSheet.create({
-  primary: {
-    color: palette.white,
-  },
-  secondary: {
-    color: palette.white,
-  },
-  surface: {
-    color: palette.text,
-  },
-  ghost: {
-    color: palette.brandDeep,
-  },
-  danger: {
-    color: palette.white,
-  },
-});
+const getTextStyle = (tone: ButtonTone, colors: any) => {
+  switch (tone) {
+    case 'primary':
+    case 'secondary':
+    case 'danger':
+      return { color: colors.white };
+    case 'surface':
+      return { color: colors.text };
+    case 'ghost':
+      return { color: colors.brandDeep };
+  }
+};

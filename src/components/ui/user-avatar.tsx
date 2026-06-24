@@ -2,7 +2,7 @@ import { Image, ImageErrorEventData } from 'expo-image';
 import { useCallback, useState } from 'react';
 import { StyleSheet, Text, View, ViewStyle } from 'react-native';
 
-import { palette } from '../../theme/palette';
+import { useTheme } from '../../providers/theme-provider';
 
 type UserAvatarProps = {
   avatarUrl: string | null;
@@ -56,6 +56,7 @@ export function UserAvatar({
   size = 56,
   style,
 }: UserAvatarProps) {
+  const { colors } = useTheme();
   const borderRadius = size * 0.36;
   const [imgError, setImgError] = useState(false);
 
@@ -114,7 +115,7 @@ export function UserAvatar({
       <Text
         style={[
           styles.initialsText,
-          { fontSize: size * 0.38 },
+          { color: colors.white, fontSize: size * 0.38 },
         ]}
       >
         {initials}
@@ -130,7 +131,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   initialsText: {
-    color: palette.white,
     fontWeight: '800',
   },
 });

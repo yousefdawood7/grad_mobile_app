@@ -18,7 +18,7 @@ import {
   normalizeBoxes,
 } from '../../src/features/classification/service';
 import { BoundingBox, RiskLevel } from '../../src/features/classification/types';
-import { palette } from '../../src/theme/palette';
+import { useTheme } from '../../src/providers/theme-provider';
 
 /** Cooldown between frames — keeps results stable and avoids flooding the server */
 const MIN_FRAME_GAP_MS = 350;
@@ -63,6 +63,7 @@ export default function LiveDetectScreen() {
   const [quality, setQuality] = useState<QualityPreset>('balanced');
   const qualityRef = useRef<QualityPreset>(quality);
   const [torchEnabled, setTorchEnabled] = useState(false);
+  const { colors } = useTheme();
 
   // Keep the ref in sync so the capture closure always reads the latest value
   useEffect(() => {
@@ -271,7 +272,7 @@ export default function LiveDetectScreen() {
 
   return (
     <Screen contentContainerStyle={styles.container}>
-      <View style={styles.previewCard}>
+      <View style={[styles.previewCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
         {permission?.granted ? (
           <DetectionOverlay
             boxes={
@@ -300,8 +301,8 @@ export default function LiveDetectScreen() {
           </DetectionOverlay>
         ) : (
           <View style={styles.permissionCard}>
-            <Text style={styles.permissionTitle}>Camera access needed</Text>
-            <Text style={styles.permissionBody}>
+            <Text style={[styles.permissionTitle, { color: colors.text }]}>Camera access needed</Text>
+            <Text style={[styles.permissionBody, { color: colors.textMuted }]}>
               Grant camera permission to start live detection and draw borders on the preview.
             </Text>
             <AppButton label="Allow camera" onPress={() => void requestPermission()} />
@@ -309,9 +310,9 @@ export default function LiveDetectScreen() {
         )}
       </View>
 
-      <View style={styles.statusCard}>
-        <Text style={styles.sectionTitle}>Live detection</Text>
-        <Text style={styles.statusBody}>{statusText}</Text>
+      <View style={[styles.statusCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+        <Text style={[styles.sectionTitle, { color: colors.text }]}>Live detection</Text>
+        <Text style={[styles.statusBody, { color: colors.textMuted }]}>{statusText}</Text>
         <View style={styles.metricRow}>
           <MetricCard
             label="Class"
@@ -346,7 +347,7 @@ export default function LiveDetectScreen() {
         </View>
 
         <View style={styles.qualitySection}>
-          <Text style={styles.qualityLabel}>Capture quality</Text>
+          <Text style={[styles.qualityLabel, { color: colors.textMuted }]}>Capture quality</Text>
           <View style={styles.qualityRow}>
             {(Object.keys(QUALITY_PRESETS) as QualityPreset[]).map((key) => (
               <Pressable
@@ -354,13 +355,15 @@ export default function LiveDetectScreen() {
                 onPress={() => setQuality(key)}
                 style={[
                   styles.qualityPill,
-                  quality === key && styles.qualityPillActive,
+                  { backgroundColor: colors.background, borderColor: colors.border },
+                  quality === key && { backgroundColor: colors.brand, borderColor: colors.brand },
                 ]}
               >
                 <Text
                   style={[
                     styles.qualityPillText,
-                    quality === key && styles.qualityPillTextActive,
+                    { color: colors.textMuted },
+                    quality === key && { color: colors.white },
                   ]}
                 >
                   {QUALITY_PRESETS[key].label}
@@ -371,19 +374,21 @@ export default function LiveDetectScreen() {
         </View>
 
         <View style={styles.optionsSection}>
-          <Text style={styles.qualityLabel}>Options</Text>
+          <Text style={[styles.qualityLabel, { color: colors.textMuted }]}>Options</Text>
 
           <Pressable
             onPress={() => setTorchEnabled((prev) => !prev)}
             style={[
               styles.qualityPill,
-              torchEnabled && styles.qualityPillActive,
+              { backgroundColor: colors.background, borderColor: colors.border },
+              torchEnabled && { backgroundColor: colors.brand, borderColor: colors.brand },
             ]}
           >
             <Text
               style={[
                 styles.qualityPillText,
-                torchEnabled && styles.qualityPillTextActive,
+                { color: colors.textMuted },
+                torchEnabled && { color: colors.white },
               ]}
             >
               {torchEnabled ? '💡 Flashlight on' : '💡 Flashlight off'}
@@ -402,7 +407,7 @@ export default function LiveDetectScreen() {
             <AppButton label="Restart live detection" onPress={() => void handleStart()} />
           )}
           {isStreaming || isConnecting ? (
-            <ActivityIndicator color={palette.brandDeep} />
+            <ActivityIndicator color={colors.brandDeep} />
           ) : null}
         </View>
       </View>
@@ -411,10 +416,11 @@ export default function LiveDetectScreen() {
 }
 
 function MetricCard({ label, value }: { label: string; value: string }) {
+  const { colors } = useTheme();
   return (
-    <View style={styles.metricCard}>
-      <Text style={styles.metricValue}>{value}</Text>
-      <Text style={styles.metricLabel}>{label}</Text>
+    <View style={[styles.metricCard, { backgroundColor: colors.background, borderColor: colors.border }]}>
+      <Text style={[styles.metricValue, { color: colors.text }]}>{value}</Text>
+      <Text style={[styles.metricLabel, { color: colors.textMuted }]}>{label}</Text>
     </View>
   );
 }
@@ -441,8 +447,6 @@ const styles = StyleSheet.create({
     paddingBottom: 24,
   },
   previewCard: {
-    backgroundColor: palette.surface,
-    borderColor: palette.border,
     borderCurve: 'continuous',
     borderRadius: 28,
     borderWidth: 1,
@@ -467,19 +471,15 @@ const styles = StyleSheet.create({
     padding: 18,
   },
   permissionTitle: {
-    color: palette.text,
     fontSize: 18,
     fontWeight: '800',
   },
   permissionBody: {
-    color: palette.textMuted,
     fontSize: 14,
     lineHeight: 21,
     textAlign: 'center',
   },
   statusCard: {
-    backgroundColor: palette.surface,
-    borderColor: palette.border,
     borderCurve: 'continuous',
     borderRadius: 28,
     borderWidth: 1,
@@ -487,12 +487,10 @@ const styles = StyleSheet.create({
     padding: 18,
   },
   sectionTitle: {
-    color: palette.text,
     fontSize: 18,
     fontWeight: '800',
   },
   statusBody: {
-    color: palette.textMuted,
     fontSize: 14,
     lineHeight: 21,
   },
@@ -501,8 +499,6 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   metricCard: {
-    backgroundColor: palette.background,
-    borderColor: palette.border,
     borderCurve: 'continuous',
     borderRadius: 18,
     borderWidth: 1,
@@ -511,12 +507,10 @@ const styles = StyleSheet.create({
     padding: 12,
   },
   metricValue: {
-    color: palette.text,
     fontSize: 15,
     fontWeight: '800',
   },
   metricLabel: {
-    color: palette.textMuted,
     fontSize: 11,
     fontWeight: '700',
     textTransform: 'uppercase',
@@ -530,7 +524,6 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   qualityLabel: {
-    color: palette.textMuted,
     fontSize: 12,
     fontWeight: '700',
     textTransform: 'uppercase',
@@ -540,8 +533,6 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   qualityPill: {
-    backgroundColor: palette.background,
-    borderColor: palette.border,
     borderCurve: 'continuous',
     borderRadius: 12,
     borderWidth: 1,
@@ -550,17 +541,9 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     alignItems: 'center',
   },
-  qualityPillActive: {
-    backgroundColor: palette.brand,
-    borderColor: palette.brand,
-  },
   qualityPillText: {
-    color: palette.textMuted,
     fontSize: 13,
     fontWeight: '700',
-  },
-  qualityPillTextActive: {
-    color: palette.white,
   },
   optionsSection: {
     gap: 10,

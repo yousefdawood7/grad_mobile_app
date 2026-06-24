@@ -1,15 +1,16 @@
-﻿import { Link, Stack } from 'expo-router';
+import { Link, Stack } from 'expo-router';
 import { Pressable, Text } from 'react-native';
 
-import { palette } from '../../src/theme/palette';
+import { useTheme } from '../../src/providers/theme-provider';
 
 function HeaderHomeLink() {
+  const { colors } = useTheme();
   return (
     <Link href="/(app)/home" asChild>
       <Pressable style={{ paddingHorizontal: 6, paddingVertical: 4 }}>
         <Text
           style={{
-            color: palette.brandDeep,
+            color: colors.brandDeep,
             fontSize: 14,
             fontWeight: '700',
           }}
@@ -22,15 +23,16 @@ function HeaderHomeLink() {
 }
 
 export default function AppLayout() {
+  const { colors } = useTheme();
   return (
     <Stack
       screenOptions={{
         animation: 'slide_from_right',
-        contentStyle: { backgroundColor: palette.background },
+        contentStyle: { backgroundColor: colors.background },
         headerBackButtonDisplayMode: 'minimal',
         headerShadowVisible: false,
-        headerStyle: { backgroundColor: palette.background },
-        headerTitleStyle: { color: palette.text, fontWeight: '700' },
+        headerStyle: { backgroundColor: colors.background },
+        headerTitleStyle: { color: colors.text, fontWeight: '700' },
       }}
     >
       <Stack.Screen name="home" options={{ title: 'Dashboard' }} />

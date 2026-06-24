@@ -5,12 +5,13 @@ import { StyleSheet, Text, View } from 'react-native';
 import { FullScreenLoader } from '../../src/components/ui/full-screen-loader';
 import { Screen } from '../../src/components/ui/screen';
 import { useClassification } from '../../src/providers/classification-provider';
-import { palette } from '../../src/theme/palette';
+import { useTheme } from '../../src/providers/theme-provider';
 
 export default function AnalyzingScreen() {
   const { analyzePendingAsset, pendingAsset } = useClassification();
   const [error, setError] = useState<string | null>(null);
   const hasStarted = useRef(false);
+  const { colors } = useTheme();
   const steps = [
     'Preparing image',
     'Sending image to the analysis service',
@@ -47,9 +48,9 @@ export default function AnalyzingScreen() {
   if (error) {
     return (
       <Screen contentContainerStyle={styles.container}>
-        <View style={styles.errorCard}>
-          <Text style={styles.errorTitle}>Analysis failed</Text>
-          <Text style={styles.errorBody}>{error}</Text>
+        <View style={[styles.errorCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          <Text style={[styles.errorTitle, { color: colors.danger }]}>Analysis failed</Text>
+          <Text style={[styles.errorBody, { color: colors.textMuted }]}>{error}</Text>
         </View>
       </Screen>
     );
@@ -63,8 +64,8 @@ export default function AnalyzingScreen() {
       <View style={styles.steps}>
         {steps.map((step) => (
           <View key={step} style={styles.stepRow}>
-            <View style={styles.stepDot} />
-            <Text style={styles.stepText}>{step}</Text>
+            <View style={[styles.stepDot, { backgroundColor: colors.brand }]} />
+            <Text style={[styles.stepText, { color: colors.textMuted }]}>{step}</Text>
           </View>
         ))}
       </View>
@@ -87,20 +88,16 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   stepDot: {
-    backgroundColor: palette.brand,
     borderCurve: 'continuous',
     borderRadius: 99,
     height: 10,
     width: 10,
   },
   stepText: {
-    color: palette.textMuted,
     fontSize: 14,
     fontWeight: '500',
   },
   errorCard: {
-    backgroundColor: palette.surface,
-    borderColor: palette.border,
     borderCurve: 'continuous',
     borderRadius: 28,
     borderWidth: 1,
@@ -108,12 +105,10 @@ const styles = StyleSheet.create({
     padding: 22,
   },
   errorTitle: {
-    color: palette.danger,
     fontSize: 20,
     fontWeight: '800',
   },
   errorBody: {
-    color: palette.textMuted,
     fontSize: 14,
     lineHeight: 21,
   },

@@ -9,10 +9,12 @@ import { Screen } from '../../src/components/ui/screen';
 import { AuthNotice } from '../../src/features/auth/components/auth-notice';
 import { signUpSchema } from '../../src/features/auth/validation';
 import { useSession } from '../../src/providers/session-provider';
-import { palette, shadows } from '../../src/theme/palette';
+import { shadows } from '../../src/theme/palette';
+import { useTheme } from '../../src/providers/theme-provider';
 
 export default function SignUpScreen() {
   const { authState, isSupabaseConfigured, signUp } = useSession();
+  const { colors } = useTheme();
   const {
     control,
     handleSubmit,
@@ -44,9 +46,9 @@ export default function SignUpScreen() {
 
   return (
     <Screen contentContainerStyle={styles.container}>
-      <View style={styles.card}>
-        <Text style={styles.title}>Create account</Text>
-        <Text style={styles.body}>
+      <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+        <Text style={[styles.title, { color: colors.text }]}>Create account</Text>
+        <Text style={[styles.body, { color: colors.textMuted }]}>
           Create an account with your name, email, and password. We will send a
           verification code to confirm your email address.
         </Text>
@@ -107,7 +109,7 @@ export default function SignUpScreen() {
         />
 
         {errors.root?.message ? (
-          <Text style={styles.errorText}>{errors.root.message}</Text>
+          <Text style={[styles.errorText, { color: colors.danger }]}>{errors.root.message}</Text>
         ) : null}
 
         <AppButton
@@ -117,7 +119,7 @@ export default function SignUpScreen() {
           onPress={onSubmit}
         />
 
-        <Link href="/(auth)/sign-in" style={styles.link}>
+        <Link href="/(auth)/sign-in" style={[styles.link, { color: colors.brandDeep }]}>
           Already have an account? Sign in
         </Link>
       </View>
@@ -131,8 +133,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   card: {
-    backgroundColor: palette.surface,
-    borderColor: palette.border,
     borderCurve: 'continuous',
     borderRadius: 30,
     borderWidth: 1,
@@ -141,22 +141,18 @@ const styles = StyleSheet.create({
     padding: 22,
   },
   title: {
-    color: palette.text,
     fontSize: 24,
     fontWeight: '800',
   },
   body: {
-    color: palette.textMuted,
     fontSize: 14,
     lineHeight: 22,
   },
   errorText: {
-    color: palette.danger,
     fontSize: 13,
     fontWeight: '600',
   },
   link: {
-    color: palette.brandDeep,
     fontSize: 15,
     fontWeight: '700',
     textAlign: 'center',

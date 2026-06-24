@@ -4,10 +4,11 @@ import { StyleSheet, Text, View } from 'react-native';
 import { AppButton } from '../../src/components/ui/app-button';
 import { Screen } from '../../src/components/ui/screen';
 import { useSession } from '../../src/providers/session-provider';
-import { palette } from '../../src/theme/palette';
+import { useTheme } from '../../src/providers/theme-provider';
 
 export default function OnboardingScreen() {
   const { completeOnboarding } = useSession();
+  const { colors } = useTheme();
 
   const handleContinue = async () => {
     await completeOnboarding();
@@ -15,18 +16,18 @@ export default function OnboardingScreen() {
   };
 
   return (
-    <Screen scrollEnabled={false} contentContainerStyle={styles.container}>
+    <Screen scrollEnabled={false} contentContainerStyle={[styles.container, { backgroundColor: colors.brandDeep }]}>
       <View style={styles.hero}>
         <View style={styles.iconBadge}>
-          <Text style={styles.iconGlyph}>WH</Text>
+          <Text style={[styles.iconGlyph, { color: colors.white }]}>WH</Text>
         </View>
-        <Text style={styles.title}>Water Hyacinth</Text>
-        <Text style={styles.subtitle}>Field Classification</Text>
+        <Text style={[styles.title, { color: colors.white }]}>Water Hyacinth</Text>
+        <Text style={[styles.subtitle, { color: colors.whiteMuted }]}>Field Classification</Text>
       </View>
 
       <View style={styles.footer}>
-        <Text style={styles.footerTitle}>Fast identification for field teams</Text>
-        <Text style={styles.description}>
+        <Text style={[styles.footerTitle, { color: colors.white }]}>Fast identification for field teams</Text>
+        <Text style={[styles.description, { color: colors.whiteMuted }]}>
           Capture or upload plant photos, review confidence scores, and keep a
           history of observations tied to your account.
         </Text>
@@ -38,7 +39,6 @@ export default function OnboardingScreen() {
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: palette.brandDeep,
     flex: 1,
     justifyContent: 'space-between',
     paddingBottom: 40,
@@ -59,17 +59,14 @@ const styles = StyleSheet.create({
     width: 86,
   },
   iconGlyph: {
-    color: palette.white,
     fontSize: 28,
     fontWeight: '800',
   },
   title: {
-    color: palette.white,
     fontSize: 30,
     fontWeight: '800',
   },
   subtitle: {
-    color: palette.whiteMuted,
     fontSize: 18,
     fontWeight: '500',
   },
@@ -78,12 +75,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
   },
   footerTitle: {
-    color: palette.white,
     fontSize: 22,
     fontWeight: '700',
   },
   description: {
-    color: palette.whiteMuted,
     fontSize: 15,
     lineHeight: 22,
   },

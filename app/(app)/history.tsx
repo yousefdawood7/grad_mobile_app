@@ -18,14 +18,15 @@ import {
 } from '../../src/features/classification/export';
 import { ClassificationRecord } from '../../src/features/classification/types';
 import { useClassification } from '../../src/providers/classification-provider';
-import { palette } from '../../src/theme/palette';
+import { useTheme } from '../../src/providers/theme-provider';
 import { displayConfidence } from '../../src/utils/confidence';
 import { formatDateTime } from '../../src/utils/date';
 
 function HistoryItem({ item }: { item: ClassificationRecord }) {
+  const { colors } = useTheme();
   return (
     <Link href={`/(app)/result/${item.id}`} asChild>
-      <Pressable style={styles.recordCard}>
+      <Pressable style={[styles.recordCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
         <Image
           contentFit="cover"
           source={{ uri: item.imageUri }}
@@ -33,11 +34,11 @@ function HistoryItem({ item }: { item: ClassificationRecord }) {
           transition={150}
         />
         <View style={styles.recordBody}>
-          <Text style={styles.recordTitle}>{item.label}</Text>
-          <Text style={styles.recordMeta}>
+          <Text style={[styles.recordTitle, { color: colors.text }]}>{item.label}</Text>
+          <Text style={[styles.recordMeta, { color: colors.textMuted }]}>
             {`${displayConfidence(item.confidence)}% confidence | ${formatDateTime(item.createdAt)}`}
           </Text>
-          <Text style={styles.recordText} numberOfLines={2}>
+          <Text style={[styles.recordText, { color: colors.textMuted }]} numberOfLines={2}>
             {item.recommendation}
           </Text>
         </View>
@@ -47,11 +48,13 @@ function HistoryItem({ item }: { item: ClassificationRecord }) {
 }
 
 function EmptyState({ isSyncing }: { isSyncing: boolean }) {
+  const { colors } = useTheme();
+
   if (isSyncing) {
     return (
-      <View style={styles.emptyCard}>
-        <Text style={styles.title}>Loading history</Text>
-        <Text style={styles.body}>
+      <View style={[styles.emptyCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+        <Text style={[styles.title, { color: colors.text }]}>Loading history</Text>
+        <Text style={[styles.body, { color: colors.textMuted }]}>
           Syncing your recent classification results.
         </Text>
       </View>
@@ -59,9 +62,9 @@ function EmptyState({ isSyncing }: { isSyncing: boolean }) {
   }
 
   return (
-    <View style={styles.emptyCard}>
-      <Text style={styles.title}>No analyses yet</Text>
-      <Text style={styles.body}>
+    <View style={[styles.emptyCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+      <Text style={[styles.title, { color: colors.text }]}>No analyses yet</Text>
+      <Text style={[styles.body, { color: colors.textMuted }]}>
         Capture or upload an image to create the first classification result.
       </Text>
       <Link href="/(app)/upload" asChild>
@@ -83,6 +86,7 @@ export default function HistoryScreen() {
     isSyncingHistory,
     refreshHistory,
   } = useClassification();
+  const { colors } = useTheme();
   const [clearError, setClearError] = useState<string | null>(null);
   const [isClearing, setIsClearing] = useState(false);
   const [isConfirmingClear, setIsConfirmingClear] = useState(false);
@@ -100,7 +104,7 @@ export default function HistoryScreen() {
   );
 
   return (
-    <SafeAreaView edges={['top']} style={styles.safeArea}>
+    <SafeAreaView edges={['top']} style={[styles.safeArea, { backgroundColor: colors.background }]}>
       <FlatList
         data={history}
         renderItem={renderItem}
@@ -109,18 +113,18 @@ export default function HistoryScreen() {
         ListHeaderComponent={
           <View style={styles.headerStack}>
             {historyError ? (
-              <View style={styles.noticeCard}>
-                <Text style={styles.noticeTitle}>Sync issue</Text>
-                <Text style={styles.noticeBody}>{historyError}</Text>
+              <View style={[styles.noticeCard, { backgroundColor: colors.warningSoft, borderColor: colors.border }]}>
+                <Text style={[styles.noticeTitle, { color: colors.warning }]}>Sync issue</Text>
+                <Text style={[styles.noticeBody, { color: colors.text }]}>{historyError}</Text>
               </View>
             ) : null}
             {history.length > 0 ? (
-              <View style={styles.toolsCard}>
-                <Text style={styles.toolsTitle}>
+              <View style={[styles.toolsCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+                <Text style={[styles.toolsTitle, { color: colors.text }]}>
                   {`${history.length} saved ${history.length === 1 ? 'record' : 'records'}`}
                 </Text>
 
-                <Text style={styles.sectionLabel}>Export</Text>
+                <Text style={[styles.sectionLabel, { color: colors.textMuted }]}>Export</Text>
                 <View style={styles.exportRow}>
                   <AppButton
                     disabled={isExporting}
@@ -163,13 +167,13 @@ export default function HistoryScreen() {
                   />
                 </View>
                 {exportError ? (
-                  <Text style={styles.clearErrorText}>{exportError}</Text>
+                  <Text style={[styles.clearErrorText, { color: colors.danger }]}>{exportError}</Text>
                 ) : null}
 
-                <View style={styles.divider} />
+                <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
                 {clearError ? (
-                  <Text style={styles.clearErrorText}>{clearError}</Text>
+                  <Text style={[styles.clearErrorText, { color: colors.danger }]}>{clearError}</Text>
                 ) : null}
                 {isConfirmingClear ? (
                   <View style={styles.confirmActions}>
@@ -190,12 +194,10 @@ export default function HistoryScreen() {
                         setClearError(null);
                         const result = await clearHistory();
                         setIsClearing(false);
-
                         if (!result.ok) {
                           setClearError(result.message);
                           return;
                         }
-
                         setIsConfirmingClear(false);
                       }}
                       tone="danger"
@@ -216,7 +218,7 @@ export default function HistoryScreen() {
         refreshControl={
           <RefreshControl
             refreshing={isSyncingHistory}
-            tintColor={palette.brand}
+            tintColor={colors.brand}
             onRefresh={() => {
               refreshHistory().catch(() => undefined);
             }}
@@ -230,7 +232,6 @@ export default function HistoryScreen() {
 
 const styles = StyleSheet.create({
   safeArea: {
-    backgroundColor: palette.background,
     flex: 1,
   },
   container: {
@@ -243,8 +244,6 @@ const styles = StyleSheet.create({
     gap: 14,
   },
   emptyCard: {
-    backgroundColor: palette.surface,
-    borderColor: palette.border,
     borderCurve: 'continuous',
     borderRadius: 28,
     borderWidth: 1,
@@ -252,8 +251,6 @@ const styles = StyleSheet.create({
     padding: 22,
   },
   noticeCard: {
-    backgroundColor: palette.warningSoft,
-    borderColor: '#F0D4A8',
     borderCurve: 'continuous',
     borderRadius: 24,
     borderWidth: 1,
@@ -261,18 +258,14 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   noticeTitle: {
-    color: palette.warning,
     fontSize: 14,
     fontWeight: '800',
   },
   noticeBody: {
-    color: palette.text,
     fontSize: 13,
     lineHeight: 19,
   },
   toolsCard: {
-    backgroundColor: palette.surface,
-    borderColor: palette.border,
     borderCurve: 'continuous',
     borderRadius: 24,
     borderWidth: 1,
@@ -280,12 +273,10 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   toolsTitle: {
-    color: palette.text,
     fontSize: 15,
     fontWeight: '700',
   },
   sectionLabel: {
-    color: palette.textMuted,
     fontSize: 11,
     fontWeight: '700',
     textTransform: 'uppercase',
@@ -301,30 +292,24 @@ const styles = StyleSheet.create({
   },
   divider: {
     height: 1,
-    backgroundColor: palette.border,
     marginVertical: 4,
   },
   confirmActions: {
     gap: 8,
   },
   clearErrorText: {
-    color: palette.danger,
     fontSize: 13,
     fontWeight: '600',
   },
   title: {
-    color: palette.text,
     fontSize: 22,
     fontWeight: '800',
   },
   body: {
-    color: palette.textMuted,
     fontSize: 14,
     lineHeight: 21,
   },
   recordCard: {
-    backgroundColor: palette.surface,
-    borderColor: palette.border,
     borderCurve: 'continuous',
     borderRadius: 24,
     borderWidth: 1,
@@ -345,17 +330,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   recordTitle: {
-    color: palette.text,
     fontSize: 17,
     fontWeight: '700',
   },
   recordMeta: {
-    color: palette.textMuted,
     fontSize: 12,
     fontWeight: '600',
   },
   recordText: {
-    color: palette.textMuted,
     fontSize: 13,
     lineHeight: 18,
   },

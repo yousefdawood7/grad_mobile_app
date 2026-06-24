@@ -2,18 +2,20 @@ import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 
 import { AppProviders } from '../src/providers/app-providers';
-import { palette } from '../src/theme/palette';
+import { useTheme } from '../src/providers/theme-provider';
 
-export default function RootLayout() {
+function RootLayoutContent() {
+  const { colors, isDark } = useTheme();
+
   return (
-    <AppProviders>
-      <StatusBar style="dark" />
+    <>
+      <StatusBar style={isDark ? 'light' : 'dark'} />
       <Stack
         screenOptions={{
           headerShadowVisible: false,
-          headerStyle: { backgroundColor: palette.background },
-          headerTitleStyle: { color: palette.text, fontWeight: '700' },
-          contentStyle: { backgroundColor: palette.background },
+          headerStyle: { backgroundColor: colors.background },
+          headerTitleStyle: { color: colors.text, fontWeight: '700' },
+          contentStyle: { backgroundColor: colors.background },
         }}
       >
         <Stack.Screen name="index" options={{ headerShown: false }} />
@@ -22,6 +24,14 @@ export default function RootLayout() {
         <Stack.Screen name="(app)" options={{ headerShown: false }} />
         <Stack.Screen name="+not-found" options={{ title: 'Not found' }} />
       </Stack>
+    </>
+  );
+}
+
+export default function RootLayout() {
+  return (
+    <AppProviders>
+      <RootLayoutContent />
     </AppProviders>
   );
 }

@@ -17,7 +17,8 @@ import { Screen } from '../../src/components/ui/screen';
 import { AuthNotice } from '../../src/features/auth/components/auth-notice';
 import { signInSchema } from '../../src/features/auth/validation';
 import { useSession } from '../../src/providers/session-provider';
-import { palette, shadows } from '../../src/theme/palette';
+import { shadows } from '../../src/theme/palette';
+import { useTheme } from '../../src/providers/theme-provider';
 
 export default function SignInScreen() {
   const {
@@ -28,6 +29,7 @@ export default function SignInScreen() {
     signIn,
     signInWithGoogle,
   } = useSession();
+  const { colors } = useTheme();
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
 
   const {
@@ -62,17 +64,17 @@ export default function SignInScreen() {
   return (
     <Screen contentContainerStyle={styles.container}>
       <View style={styles.header}>
-        <View style={styles.logoBadge}>
-          <Text style={styles.logoText}>WH</Text>
+        <View style={[styles.logoBadge, { backgroundColor: colors.brand }]}>
+          <Text style={[styles.logoText, { color: colors.white }]}>WH</Text>
         </View>
-        <Text style={styles.title}>Water Hyacinth Classification</Text>
-        <Text style={styles.subtitle}>
+        <Text style={[styles.title, { color: colors.text }]}>Water Hyacinth Classification</Text>
+        <Text style={[styles.subtitle, { color: colors.textMuted }]}>
           Sign in to save scan history across devices and keep your field records
           organized.
         </Text>
       </View>
 
-      <View style={styles.card}>
+      <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
         <AuthNotice />
 
         <Controller
@@ -112,7 +114,7 @@ export default function SignInScreen() {
         />
 
         {errors.root?.message ? (
-          <Text style={styles.errorText}>{errors.root.message}</Text>
+          <Text style={[styles.errorText, { color: colors.danger }]}>{errors.root.message}</Text>
         ) : null}
 
         <View style={styles.actionGroup}>
@@ -165,17 +167,18 @@ export default function SignInScreen() {
             }}
             style={({ pressed }) => [
               styles.googleButton,
+              { backgroundColor: colors.surface, borderColor: colors.border },
               (!isSupabaseConfigured || isSubmitting || isGoogleLoading) &&
                 styles.googleButtonDisabled,
               pressed ? styles.googleButtonPressed : null,
             ]}
           >
             {isGoogleLoading ? (
-              <ActivityIndicator color={palette.text} />
+              <ActivityIndicator color={colors.text} />
             ) : (
               <View style={styles.googleContent}>
                 <GoogleLogo size={18} />
-                <Text style={styles.googleLabel}>Continue with Google</Text>
+                <Text style={[styles.googleLabel, { color: colors.text }]}>Continue with Google</Text>
               </View>
             )}
           </Pressable>
@@ -183,7 +186,7 @@ export default function SignInScreen() {
       </View>
 
       <View style={styles.footer}>
-        <Link href="/(auth)/sign-up" style={styles.link}>
+        <Link href="/(auth)/sign-up" style={[styles.link, { color: colors.brandDeep }]}>
           Create an account
         </Link>
         <AppButton
@@ -209,7 +212,6 @@ const styles = StyleSheet.create({
   },
   logoBadge: {
     alignItems: 'center',
-    backgroundColor: palette.brand,
     borderCurve: 'continuous',
     borderRadius: 22,
     ...shadows.strong,
@@ -218,26 +220,21 @@ const styles = StyleSheet.create({
     width: 64,
   },
   logoText: {
-    color: palette.white,
     fontSize: 22,
     fontWeight: '800',
   },
   title: {
-    color: palette.text,
     fontSize: 30,
     fontWeight: '800',
     textAlign: 'center',
   },
   subtitle: {
-    color: palette.textMuted,
     fontSize: 15,
     lineHeight: 22,
     maxWidth: 520,
     textAlign: 'center',
   },
   card: {
-    backgroundColor: palette.surface,
-    borderColor: palette.border,
     borderCurve: 'continuous',
     borderRadius: 30,
     borderWidth: 1,
@@ -246,7 +243,6 @@ const styles = StyleSheet.create({
     padding: 22,
   },
   errorText: {
-    color: palette.danger,
     fontSize: 13,
     fontWeight: '600',
   },
@@ -255,8 +251,6 @@ const styles = StyleSheet.create({
   },
   googleButton: {
     alignItems: 'center',
-    backgroundColor: palette.surface,
-    borderColor: palette.border,
     borderCurve: 'continuous',
     borderRadius: 18,
     borderWidth: 1,
@@ -277,7 +271,6 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   googleLabel: {
-    color: palette.text,
     fontSize: 15,
     fontWeight: '700',
   },
@@ -287,7 +280,6 @@ const styles = StyleSheet.create({
     marginTop: 18,
   },
   link: {
-    color: palette.brandDeep,
     fontSize: 15,
     fontWeight: '700',
   },

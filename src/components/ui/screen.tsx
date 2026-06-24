@@ -1,11 +1,11 @@
 import { PropsWithChildren } from 'react';
-import { KeyboardAvoidingView, Platform, ScrollView, ScrollViewProps, StyleSheet, ViewStyle } from 'react-native';
+import { KeyboardAvoidingView, Platform, ScrollView, ScrollViewProps, StyleProp, StyleSheet, ViewStyle } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { palette } from '../../theme/palette';
+import { useTheme } from '../../providers/theme-provider';
 
 type ScreenProps = PropsWithChildren<{
-  contentContainerStyle?: ViewStyle;
+  contentContainerStyle?: StyleProp<ViewStyle>;
   scrollEnabled?: boolean;
 }> &
   Omit<ScrollViewProps, 'contentContainerStyle'>;
@@ -16,8 +16,10 @@ export function Screen({
   scrollEnabled = true,
   ...props
 }: ScreenProps) {
+  const { colors } = useTheme();
+
   return (
-    <SafeAreaView edges={['top']} style={styles.safeArea}>
+    <SafeAreaView edges={['top']} style={[styles.safeArea, { backgroundColor: colors.background }]}>
       <KeyboardAvoidingView 
         style={styles.keyboardAvoiding} 
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -37,7 +39,6 @@ export function Screen({
 
 const styles = StyleSheet.create({
   safeArea: {
-    backgroundColor: palette.background,
     flex: 1,
   },
   keyboardAvoiding: {

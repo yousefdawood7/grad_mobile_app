@@ -6,7 +6,7 @@ import { AppButton } from '../../src/components/ui/app-button';
 import { FullScreenLoader } from '../../src/components/ui/full-screen-loader';
 import { Screen } from '../../src/components/ui/screen';
 import { supabase } from '../../src/lib/supabase';
-import { palette } from '../../src/theme/palette';
+import { useTheme } from '../../src/providers/theme-provider';
 
 export default function AuthCallbackScreen() {
   const params = useLocalSearchParams<{
@@ -117,6 +117,8 @@ export default function AuthCallbackScreen() {
     };
   }, [resolvedParams.code, resolvedParams.error, resolvedParams.error_description]);
 
+  const { colors } = useTheme();
+
   if (!errorMessage) {
     return (
       <FullScreenLoader
@@ -128,9 +130,9 @@ export default function AuthCallbackScreen() {
 
   return (
     <Screen contentContainerStyle={styles.container}>
-      <View style={styles.card}>
-        <Text style={styles.title}>Sign-in could not be completed</Text>
-        <Text style={styles.body}>{errorMessage}</Text>
+      <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+        <Text style={[styles.title, { color: colors.text }]}>Sign-in could not be completed</Text>
+        <Text style={[styles.body, { color: colors.textMuted }]}>{errorMessage}</Text>
         <AppButton
           label="Back to sign in"
           onPress={() => router.replace('/(auth)/sign-in')}
@@ -146,8 +148,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   card: {
-    backgroundColor: palette.surface,
-    borderColor: palette.border,
     borderCurve: 'continuous',
     borderRadius: 28,
     borderWidth: 1,
@@ -155,12 +155,10 @@ const styles = StyleSheet.create({
     padding: 22,
   },
   title: {
-    color: palette.text,
     fontSize: 24,
     fontWeight: '800',
   },
   body: {
-    color: palette.textMuted,
     fontSize: 14,
     lineHeight: 22,
   },

@@ -1,6 +1,6 @@
 import { StyleSheet, Text, View } from 'react-native';
 
-import { palette } from '../../../theme/palette';
+import { useTheme } from '../../../providers/theme-provider';
 
 const tips = [
   'Use bright, even lighting whenever possible.',
@@ -9,13 +9,15 @@ const tips = [
 ];
 
 export function TipsCard() {
+  const { colors } = useTheme();
+
   return (
-    <View style={styles.card}>
-      <Text style={styles.title}>Tips for better scans</Text>
+    <View style={[styles.card, { backgroundColor: colors.successSoft }]}>
+      <Text style={[styles.title, { color: colors.success }]}>Tips for better scans</Text>
       {tips.map((tip) => (
         <View key={tip} style={styles.tipRow}>
-          <View style={styles.tipDot} />
-          <Text style={styles.tip}>{tip}</Text>
+          <View style={[styles.tipDot, { backgroundColor: colors.success }]} />
+          <Text style={[styles.tip, { color: colors.text }]}>{tip}</Text>
         </View>
       ))}
     </View>
@@ -24,14 +26,12 @@ export function TipsCard() {
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: palette.successSoft,
     borderCurve: 'continuous',
     borderRadius: 24,
     gap: 10,
     padding: 18,
   },
   title: {
-    color: palette.success,
     fontSize: 14,
     fontWeight: '800',
   },
@@ -41,7 +41,6 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   tipDot: {
-    backgroundColor: palette.success,
     borderCurve: 'continuous',
     borderRadius: 99,
     height: 7,
@@ -49,7 +48,6 @@ const styles = StyleSheet.create({
     width: 7,
   },
   tip: {
-    color: palette.text,
     flex: 1,
     fontSize: 13,
     lineHeight: 18,

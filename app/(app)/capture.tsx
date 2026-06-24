@@ -1,4 +1,4 @@
-﻿import * as ImagePicker from 'expo-image-picker';
+import * as ImagePicker from 'expo-image-picker';
 import { Image } from 'expo-image';
 import { Link, router } from 'expo-router';
 import { useState } from 'react';
@@ -10,11 +10,12 @@ import { createPersistentAssetUri } from '../../src/features/classification/asse
 import { TipsCard } from '../../src/features/classification/components/tips-card';
 import { ensureCameraPermission } from '../../src/features/permissions/media';
 import { useClassification } from '../../src/providers/classification-provider';
-import { palette } from '../../src/theme/palette';
+import { useTheme } from '../../src/providers/theme-provider';
 
 export default function CaptureScreen() {
   const { pendingAsset, queuePendingAsset } = useClassification();
   const [permissionMessage, setPermissionMessage] = useState<string | null>(null);
+  const { colors } = useTheme();
 
   const handleTakePhoto = async () => {
     setPermissionMessage(null);
@@ -50,7 +51,7 @@ export default function CaptureScreen() {
 
   return (
     <Screen contentContainerStyle={styles.container}>
-      <View style={styles.previewCard}>
+      <View style={[styles.previewCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
         {pendingAsset ? (
           <Image
             contentFit="cover"
@@ -60,8 +61,8 @@ export default function CaptureScreen() {
           />
         ) : (
           <View style={styles.emptyState}>
-            <Text style={styles.emptyTitle}>Choose detection mode</Text>
-            <Text style={styles.emptyBody}>
+            <Text style={[styles.emptyTitle, { color: colors.text }]}>Choose detection mode</Text>
+            <Text style={[styles.emptyBody, { color: colors.textMuted }]}>
               Take a still photo for a saved result, or open live detection to
               stream frames and see borders update in real time.
             </Text>
@@ -69,13 +70,13 @@ export default function CaptureScreen() {
         )}
       </View>
 
-      <View style={styles.actionCard}>
+      <View style={[styles.actionCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
         <AppButton label="Take photo" onPress={handleTakePhoto} />
         <Link href="/(app)/live-detect" asChild>
           <AppButton label="Open live detection" tone="secondary" />
         </Link>
         {permissionMessage ? (
-          <Text style={styles.permissionText}>{permissionMessage}</Text>
+          <Text style={[styles.permissionText, { color: colors.warning }]}>{permissionMessage}</Text>
         ) : null}
       </View>
 
@@ -90,8 +91,6 @@ const styles = StyleSheet.create({
   },
   previewCard: {
     alignItems: 'center',
-    backgroundColor: palette.surface,
-    borderColor: palette.border,
     borderCurve: 'continuous',
     borderRadius: 28,
     borderStyle: 'dashed',
@@ -112,19 +111,15 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   emptyTitle: {
-    color: palette.text,
     fontSize: 18,
     fontWeight: '700',
   },
   emptyBody: {
-    color: palette.textMuted,
     fontSize: 14,
     lineHeight: 21,
     textAlign: 'center',
   },
   actionCard: {
-    backgroundColor: palette.surface,
-    borderColor: palette.border,
     borderCurve: 'continuous',
     borderRadius: 24,
     borderWidth: 1,
@@ -132,7 +127,6 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   permissionText: {
-    color: palette.warning,
     fontSize: 13,
     fontWeight: '600',
   },

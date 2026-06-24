@@ -7,7 +7,7 @@ import {
   ViewStyle,
 } from 'react-native';
 
-import { palette } from '../../../theme/palette';
+import { useTheme } from '../../../providers/theme-provider';
 import { BoundingBox } from '../types';
 
 type DetectionOverlayProps = {
@@ -23,10 +23,11 @@ export function DetectionOverlay({
   boxes,
   imageHeight,
   imageWidth,
-  labelColor = palette.danger,
+  labelColor,
   style,
   children,
 }: DetectionOverlayProps) {
+  const { colors } = useTheme();
   const [layout, setLayout] = useState({ height: 0, width: 0 });
 
   const scaledBoxes = useMemo(() => {
@@ -62,7 +63,7 @@ export function DetectionOverlay({
             style={[
               styles.box,
               {
-                borderColor: labelColor,
+                borderColor: labelColor ?? colors.danger,
                 height: box.height,
                 left: box.left,
                 top: box.top,
