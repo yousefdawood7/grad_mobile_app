@@ -39,7 +39,7 @@ export default function ResultScreen() {
     <Screen contentContainerStyle={styles.container}>
       <View style={styles.card}>
         <DetectionOverlay
-          boxes={showBorders ? (record.boxes ?? []) : []}
+          boxes={showBorders && record.isPositive ? (record.boxes ?? []) : []}
           imageHeight={record.imageHeight}
           imageWidth={record.imageWidth}
           style={[

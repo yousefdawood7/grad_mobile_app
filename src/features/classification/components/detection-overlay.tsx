@@ -3,7 +3,6 @@ import {
   LayoutChangeEvent,
   StyleProp,
   StyleSheet,
-  Text,
   View,
   ViewStyle,
 } from 'react-native';
@@ -70,11 +69,7 @@ export function DetectionOverlay({
                 width: box.width,
               },
             ]}
-          >
-            <Text style={[styles.badge, { backgroundColor: labelColor }]}>
-              {box.confidence}%
-            </Text>
-          </View>
+          />
         ))}
       </View>
     </View>
@@ -90,15 +85,5 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 2,
     position: 'absolute',
-  },
-  badge: {
-    alignSelf: 'flex-start',
-    borderBottomRightRadius: 8,
-    color: palette.white,
-    fontSize: 11,
-    fontWeight: '700',
-    overflow: 'hidden',
-    paddingHorizontal: 6,
-    paddingVertical: 3,
   },
 });
